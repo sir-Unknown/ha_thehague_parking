@@ -39,3 +39,6 @@ deps/
 *.tmp
 *.swp
 *.bak
+
+__pycache__/
+*.pyc
