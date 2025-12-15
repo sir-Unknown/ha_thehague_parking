@@ -1,0 +1,67 @@
+create_reservation:
+  name: Create reservation
+  description: Create a parking reservation.
+  fields:
+    config_entry_id:
+      name: Config entry id
+      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      required: false
+      selector:
+        text:
+    license_plate:
+      name: License plate
+      description: License plate (for example `AB12CD`).
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: Optional label for the reservation.
+      required: false
+      selector:
+        text:
+    start_time:
+      name: Start time
+      description: Optional. Start time as a datetime string, for example `2025-12-15T10:16:57Z`. Required if you do not set `start_time_entity_id`.
+      required: false
+      selector:
+        text:
+    start_time_entity_id:
+      name: Start time entity
+      description: Optional. A `datetime` entity to use as the start time.
+      required: false
+      selector:
+        entity:
+          domain: datetime
+    end_time:
+      name: End time
+      description: Optional. End time as a datetime string. If you leave this empty, the integration tries to use the zone end time for the given start time.
+      required: false
+      selector:
+        text:
+    end_time_entity_id:
+      name: End time entity
+      description: Optional. A `datetime` entity to use as the end time.
+      required: false
+      selector:
+        entity:
+          domain: datetime
+
+delete_reservation:
+  name: Delete reservation
+  description: Delete a parking reservation by its ID.
+  fields:
+    config_entry_id:
+      name: Config entry id
+      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      required: false
+      selector:
+        text:
+    reservation_id:
+      name: Reservation ID
+      description: Reservation ID returned by the API.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box

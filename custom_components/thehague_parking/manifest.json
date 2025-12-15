@@ -1,0 +1,11 @@
+{
+  "domain": "thehague_parking",
+  "name": "Den Haag parkeren",
+  "codeowners": ["@sir-Unkown"],
+  "config_flow": true,
+  "documentation": "https://parkerendenhaag.denhaag.nl/",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.5.1"
+}

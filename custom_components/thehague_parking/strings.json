@@ -1,0 +1,164 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Den Haag parking",
+        "description": "Enter your Den Haag parking account credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "Your credentials are no longer valid. Enter your updated credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect. Check your internet connection.",
+      "invalid_auth": "Authentication failed. Check your username and password.",
+      "unknown": "Unexpected error. Try again later.",
+      "wrong_account": "This account does not match the existing configuration."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "debit_minutes": {
+        "name": "Current balance"
+      },
+      "credit_minutes": {
+        "name": "Amount to be deducted"
+      },
+      "reservation_count": {
+        "name": "Reservation count"
+      },
+      "zone_name": {
+        "name": "Zone name"
+      },
+      "zone_start_time": {
+        "name": "Paid parking from"
+      },
+      "zone_end_time": {
+        "name": "Paid parking until"
+      },
+      "active_reservations": {
+        "name": "Active reservations"
+      },
+      "active_reservation": {
+        "name": "Active reservation"
+      }
+    },
+    "datetime": {
+      "start": {
+        "name": "Start time"
+      },
+      "end": {
+        "name": "End time"
+      },
+      "active_reservation_end_time": {
+        "name": "Active reservation end time"
+      }
+    },
+    "select": {
+      "favorites": {
+        "name": "Favorites"
+      },
+      "active_reservation": {
+        "name": "Active reservation"
+      }
+    },
+    "text": {
+      "name": {
+        "name": "Name"
+      },
+      "license_plate": {
+        "name": "License plate"
+      }
+    },
+    "switch": {
+      "add_to_favorites": {
+        "name": "Add to favorites"
+      }
+    },
+    "button": {
+      "create_reservation": {
+        "name": "Create reservation"
+      },
+      "reservation_adjust": {
+        "name": "Adjust reservation"
+      },
+      "reservation_end": {
+        "name": "End reservation"
+      }
+    }
+  },
+  "exceptions": {
+    "config_entry_not_loaded": {
+      "message": "The config entry is not loaded."
+    },
+    "could_not_adjust_reservation": {
+      "message": "Could not adjust reservation: {error}"
+    },
+    "could_not_create_reservation": {
+      "message": "Could not create reservation: {error}"
+    },
+    "could_not_delete_reservation": {
+      "message": "Could not delete reservation: {error}"
+    },
+    "could_not_determine_zone_end_time": {
+      "message": "Could not determine zone end time"
+    },
+    "could_not_end_reservation": {
+      "message": "Could not end reservation: {error}"
+    },
+    "datetime_entity_no_value": {
+      "message": "The `{field}` entity `{entity_id}` has no value"
+    },
+    "datetime_entity_not_found": {
+      "message": "The `{field}` entity `{entity_id}` was not found"
+    },
+    "end_time_must_be_after_start_time": {
+      "message": "End time must be after start time"
+    },
+    "end_time_must_be_before_zone_end_time": {
+      "message": "End time must be before the zone end time"
+    },
+    "invalid_datetime_string": {
+      "message": "`{field}` must be a datetime string, got: {value}"
+    },
+    "missing_end_time": {
+      "message": "Set an end time before creating a reservation"
+    },
+    "missing_license_plate": {
+      "message": "Set a license plate before creating a reservation"
+    },
+    "missing_new_end_time": {
+      "message": "Set a new end time before adjusting the reservation"
+    },
+    "missing_active_reservation": {
+      "message": "Select a reservation first"
+    },
+    "missing_start_time": {
+      "message": "Set a start time before creating a reservation"
+    },
+    "reservation_end_time_not_available": {
+      "message": "Reservation end time is not available"
+    },
+    "reservation_not_available": {
+      "message": "Reservation is not available"
+    },
+    "reservation_start_time_not_available": {
+      "message": "Reservation start time is not available"
+    },
+    "set_config_entry_id_multiple_entries": {
+      "message": "Set `config_entry_id` because multiple entries are configured"
+    },
+    "set_start_time_or_entity": {
+      "message": "Set `start_time` or `start_time_entity_id`"
+    }
+  }
+}
