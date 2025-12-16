@@ -41,8 +41,6 @@ export class TheHagueParkingCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
   @state() private _config?: TheHagueParkingCardConfig;
   @state() private _endingReservationIds = new Set<number>();
-  @state() private _adjustingReservationIds = new Set<string>();
-  @state() private _endTimeDraft: Record<string, string> = {};
   @state() private _resolvingService = false;
   @state() private _resolvedConfigEntryId?: string;
   @state() private _resolvedMeldnummer?: string;
@@ -203,92 +201,6 @@ export class TheHagueParkingCard extends LitElement {
     return start && end ? `${start}–${end}` : start || end;
   }
 
-  private _pad2(value: number): string {
-    return value.toString().padStart(2, "0");
-  }
-
-  private _toDateTimeLocalValue(date: Date): string {
-    return `${date.getFullYear()}-${this._pad2(date.getMonth() + 1)}-${this._pad2(
-      date.getDate()
-    )}T${this._pad2(date.getHours())}:${this._pad2(date.getMinutes())}:${this._pad2(
-      date.getSeconds()
-    )}`;
-  }
-
-  private _defaultEndTimeDraft(reservation: TheHagueParkingReservation): string {
-    if (!reservation.end_time) return "";
-    const date = new Date(reservation.end_time);
-    return Number.isNaN(date.getTime()) ? "" : this._toDateTimeLocalValue(date);
-  }
-
-  private _onEndTimeInput(reservationId: string, value: string): void {
-    this._endTimeDraft = { ...this._endTimeDraft, [reservationId]: value };
-  }
-
-  private async _adjustEndTime(reservation: TheHagueParkingReservation): Promise<void> {
-    if (!this.hass || !this._config) return;
-
-	    const reservationId = reservation.id;
-	    if (reservationId === undefined || reservationId === null) {
-	      this._notify(localize(this.hass, "active_reservation_card.reservation_id_missing"));
-	      return;
-	    }
-    const reservationIdStr = String(reservationId);
-    const reservationIdNumber = Number(reservationIdStr);
-    if (!Number.isFinite(reservationIdNumber) || reservationIdNumber <= 0) {
-      this._notify(localize(this.hass, "active_reservation_card.invalid_reservation_id"));
-      return;
-    }
-
-	    const draft =
-	      this._endTimeDraft[reservationIdStr] ?? this._defaultEndTimeDraft(reservation);
-	    if (!draft) {
-	      this._notify(localize(this.hass, "active_reservation_card.pick_new_end_time"));
-	      return;
-	    }
-
-	    const newEnd = new Date(draft);
-	    if (Number.isNaN(newEnd.getTime())) {
-	      this._notify(localize(this.hass, "active_reservation_card.invalid_end_time"));
-	      return;
-	    }
-
-	    const start = reservation.start_time ? new Date(reservation.start_time) : undefined;
-	    if (start && !Number.isNaN(start.getTime()) && newEnd.getTime() <= start.getTime()) {
-	      this._notify(localize(this.hass, "active_reservation_card.end_time_after_start"));
-	      return;
-	    }
-
-    const currentEnd = reservation.end_time ? new Date(reservation.end_time) : undefined;
-	    if (
-	      currentEnd &&
-	      !Number.isNaN(currentEnd.getTime()) &&
-	      newEnd.getTime() === currentEnd.getTime()
-	    ) {
-	      this._notify(localize(this.hass, "active_reservation_card.end_time_unchanged"));
-	      return;
-	    }
-
-    this._adjustingReservationIds = new Set(this._adjustingReservationIds).add(
-      reservationIdStr
-    );
-    try {
-      await this.hass.callService("thehague_parking", "adjust_reservation_end_time", {
-        reservation_id: reservationIdNumber,
-        end_time: newEnd.toISOString(),
-        ...(this._config.config_entry_id && {
-          config_entry_id: this._config.config_entry_id,
-        }),
-      });
-	    } catch (_err) {
-	      this._notify(localize(this.hass, "active_reservation_card.could_not_adjust_end_time"));
-	    } finally {
-	      const next = new Set(this._adjustingReservationIds);
-	      next.delete(reservationIdStr);
-	      this._adjustingReservationIds = next;
-	    }
-  }
-
   private async _endReservation(reservationId: number): Promise<void> {
     if (!this.hass || !this._config) return;
 
@@ -352,7 +264,6 @@ export class TheHagueParkingCard extends LitElement {
 	    const reservations = this._reservations ?? [];
 	    const title =
 	      this._config.title ?? localize(this.hass, "active_reservation_card.default_title");
-	    const canAdjust = true;
 
 	    return html`
 	      <ha-card header=${title}>
@@ -374,16 +285,6 @@ export class TheHagueParkingCard extends LitElement {
 
 	                    const canEnd = Number.isFinite(id);
 	                    const ending = canEnd && this._endingReservationIds.has(id);
-	                    const reservationIdStr =
-	                      r.id === undefined || r.id === null ? undefined : String(r.id);
-	                    const endDraft =
-	                      reservationIdStr === undefined
-	                        ? ""
-	                        : this._endTimeDraft[reservationIdStr] ??
-	                          this._defaultEndTimeDraft(r);
-	                    const adjusting =
-	                      reservationIdStr !== undefined &&
-	                      this._adjustingReservationIds.has(reservationIdStr);
 	                    const time = this._formatTimeRange(r);
 
 	                    return html`
@@ -397,28 +298,6 @@ export class TheHagueParkingCard extends LitElement {
 	                            : nothing}
 	                        </div>
 	                        <div class="actions">
-	                          <input
-	                            class="endtime"
-	                            type="datetime-local"
-	                            step="1"
-	                            .value=${endDraft}
-	                            ?disabled=${!canAdjust || reservationIdStr === undefined || adjusting}
-	                            @change=${(ev: Event) =>
-	                              reservationIdStr &&
-	                              this._onEndTimeInput(
-	                                reservationIdStr,
-	                                (ev.target as HTMLInputElement).value
-	                              )}
-	                          />
-	                          <ha-button
-	                            appearance="outlined"
-	                            .disabled=${!canAdjust || reservationIdStr === undefined || adjusting}
-	                            @click=${() => this._adjustEndTime(r)}
-	                          >
-	                            ${adjusting
-	                              ? localize(this.hass, "common.working")
-	                              : localize(this.hass, "active_reservation_card.adjust")}
-	                          </ha-button>
 	                          <ha-button
 	                            appearance="outlined"
 	                            .disabled=${!canEnd || ending}
@@ -471,19 +350,6 @@ export class TheHagueParkingCard extends LitElement {
 	      justify-content: flex-end;
 	      gap: 8px;
 	      flex-wrap: wrap;
-	    }
-
-	    .endtime {
-	      border: 1px solid var(--divider-color);
-	      border-radius: var(--ha-card-border-radius, 12px);
-	      background: transparent;
-	      color: var(--primary-text-color);
-	      padding: 6px 10px;
-	    }
-
-	    .endtime:disabled {
-	      opacity: 0.6;
-	      cursor: not-allowed;
 	    }
 
 	    .label {

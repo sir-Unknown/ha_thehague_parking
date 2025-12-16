@@ -898,8 +898,6 @@ var TheHagueParkingCard = class extends i4 {
   constructor() {
     super(...arguments);
     this._endingReservationIds = /* @__PURE__ */ new Set();
-    this._adjustingReservationIds = /* @__PURE__ */ new Set();
-    this._endTimeDraft = {};
     this._resolvingService = false;
   }
   setConfig(config) {
@@ -1018,76 +1016,6 @@ var TheHagueParkingCard = class extends i4 {
     const end = this._formatTime(reservation.end_time);
     return start && end ? `${start}\u2013${end}` : start || end;
   }
-  _pad2(value) {
-    return value.toString().padStart(2, "0");
-  }
-  _toDateTimeLocalValue(date) {
-    return `${date.getFullYear()}-${this._pad2(date.getMonth() + 1)}-${this._pad2(
-      date.getDate()
-    )}T${this._pad2(date.getHours())}:${this._pad2(date.getMinutes())}:${this._pad2(
-      date.getSeconds()
-    )}`;
-  }
-  _defaultEndTimeDraft(reservation) {
-    if (!reservation.end_time) return "";
-    const date = new Date(reservation.end_time);
-    return Number.isNaN(date.getTime()) ? "" : this._toDateTimeLocalValue(date);
-  }
-  _onEndTimeInput(reservationId, value) {
-    this._endTimeDraft = { ...this._endTimeDraft, [reservationId]: value };
-  }
-  async _adjustEndTime(reservation) {
-    if (!this.hass || !this._config) return;
-    const reservationId = reservation.id;
-    if (reservationId === void 0 || reservationId === null) {
-      this._notify(localize(this.hass, "active_reservation_card.reservation_id_missing"));
-      return;
-    }
-    const reservationIdStr = String(reservationId);
-    const reservationIdNumber = Number(reservationIdStr);
-    if (!Number.isFinite(reservationIdNumber) || reservationIdNumber <= 0) {
-      this._notify(localize(this.hass, "active_reservation_card.invalid_reservation_id"));
-      return;
-    }
-    const draft = this._endTimeDraft[reservationIdStr] ?? this._defaultEndTimeDraft(reservation);
-    if (!draft) {
-      this._notify(localize(this.hass, "active_reservation_card.pick_new_end_time"));
-      return;
-    }
-    const newEnd = new Date(draft);
-    if (Number.isNaN(newEnd.getTime())) {
-      this._notify(localize(this.hass, "active_reservation_card.invalid_end_time"));
-      return;
-    }
-    const start = reservation.start_time ? new Date(reservation.start_time) : void 0;
-    if (start && !Number.isNaN(start.getTime()) && newEnd.getTime() <= start.getTime()) {
-      this._notify(localize(this.hass, "active_reservation_card.end_time_after_start"));
-      return;
-    }
-    const currentEnd = reservation.end_time ? new Date(reservation.end_time) : void 0;
-    if (currentEnd && !Number.isNaN(currentEnd.getTime()) && newEnd.getTime() === currentEnd.getTime()) {
-      this._notify(localize(this.hass, "active_reservation_card.end_time_unchanged"));
-      return;
-    }
-    this._adjustingReservationIds = new Set(this._adjustingReservationIds).add(
-      reservationIdStr
-    );
-    try {
-      await this.hass.callService("thehague_parking", "adjust_reservation_end_time", {
-        reservation_id: reservationIdNumber,
-        end_time: newEnd.toISOString(),
-        ...this._config.config_entry_id && {
-          config_entry_id: this._config.config_entry_id
-        }
-      });
-    } catch (_err) {
-      this._notify(localize(this.hass, "active_reservation_card.could_not_adjust_end_time"));
-    } finally {
-      const next = new Set(this._adjustingReservationIds);
-      next.delete(reservationIdStr);
-      this._adjustingReservationIds = next;
-    }
-  }
   async _endReservation(reservationId) {
     if (!this.hass || !this._config) return;
     this._endingReservationIds = new Set(this._endingReservationIds).add(
@@ -1142,7 +1070,6 @@ var TheHagueParkingCard = class extends i4 {
     }
     const reservations = this._reservations ?? [];
     const title = this._config.title ?? localize(this.hass, "active_reservation_card.default_title");
-    const canAdjust = true;
     return x`
 	      <ha-card header=${title}>
 	        <div class="card-content">
@@ -1155,9 +1082,6 @@ var TheHagueParkingCard = class extends i4 {
       const id = typeof r6.id === "number" ? r6.id : typeof r6.id === "string" ? Number(r6.id) : NaN;
       const canEnd = Number.isFinite(id);
       const ending = canEnd && this._endingReservationIds.has(id);
-      const reservationIdStr = r6.id === void 0 || r6.id === null ? void 0 : String(r6.id);
-      const endDraft = reservationIdStr === void 0 ? "" : this._endTimeDraft[reservationIdStr] ?? this._defaultEndTimeDraft(r6);
-      const adjusting = reservationIdStr !== void 0 && this._adjustingReservationIds.has(reservationIdStr);
       const time = this._formatTimeRange(r6);
       return x`
 	                      <div class="row">
@@ -1168,24 +1092,6 @@ var TheHagueParkingCard = class extends i4 {
                           ${time ? x`<div class="time">${time}</div>` : E}
 	                        </div>
 	                        <div class="actions">
-	                          <input
-	                            class="endtime"
-	                            type="datetime-local"
-	                            step="1"
-	                            .value=${endDraft}
-	                            ?disabled=${!canAdjust || reservationIdStr === void 0 || adjusting}
-	                            @change=${(ev) => reservationIdStr && this._onEndTimeInput(
-        reservationIdStr,
-        ev.target.value
-      )}
-	                          />
-	                          <ha-button
-	                            appearance="outlined"
-	                            .disabled=${!canAdjust || reservationIdStr === void 0 || adjusting}
-	                            @click=${() => this._adjustEndTime(r6)}
-	                          >
-	                            ${adjusting ? localize(this.hass, "common.working") : localize(this.hass, "active_reservation_card.adjust")}
-	                          </ha-button>
 	                          <ha-button
 	                            appearance="outlined"
 	                            .disabled=${!canEnd || ending}
@@ -1238,19 +1144,6 @@ TheHagueParkingCard.styles = i`
 	      flex-wrap: wrap;
 	    }
 
-	    .endtime {
-	      border: 1px solid var(--divider-color);
-	      border-radius: var(--ha-card-border-radius, 12px);
-	      background: transparent;
-	      color: var(--primary-text-color);
-	      padding: 6px 10px;
-	    }
-
-	    .endtime:disabled {
-	      opacity: 0.6;
-	      cursor: not-allowed;
-	    }
-
 	    .label {
 	      font-weight: 500;
 	      overflow: hidden;
@@ -1273,12 +1166,6 @@ __decorateClass([
 __decorateClass([
   r5()
 ], TheHagueParkingCard.prototype, "_endingReservationIds", 2);
-__decorateClass([
-  r5()
-], TheHagueParkingCard.prototype, "_adjustingReservationIds", 2);
-__decorateClass([
-  r5()
-], TheHagueParkingCard.prototype, "_endTimeDraft", 2);
 __decorateClass([
   r5()
 ], TheHagueParkingCard.prototype, "_resolvingService", 2);
