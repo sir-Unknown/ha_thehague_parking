@@ -52,7 +52,16 @@ def _normalize_time(value: str) -> str | None:
     """Normalize a time string to HH:MM."""
     if not value:
         return None
-    parsed = dt_util.parse_time(value)
+
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    parsed = dt_util.parse_time(normalized)
+    if parsed is None and normalized.isdigit():
+        hour = int(normalized)
+        if 0 <= hour < 24:
+            return f"{hour:02d}:00"
     if parsed is None:
         return None
     return f"{parsed.hour:02d}:{parsed.minute:02d}"
