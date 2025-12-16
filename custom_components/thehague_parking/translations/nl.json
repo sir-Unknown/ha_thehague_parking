@@ -28,12 +28,40 @@
     }
   },
   "options": {
+    "error": {
+      "description_required": "Vul een beschrijving in.",
+      "invalid_time": "Vul tijden in als HH:MM.",
+      "invalid_time_range": "De starttijd en eindtijd mogen niet hetzelfde zijn.",
+      "no_workdays_selected": "Selecteer minimaal één dag."
+    },
     "step": {
       "init": {
         "title": "Beschrijving aanpassen",
-        "description": "Wijzig de beschrijving voor deze dienst.",
+        "description": "Wijzig de beschrijving en werktijden. Actieve reserveringen worden automatisch afgemeld op de eindtijd per ingeschakelde dag (ook over middernacht).",
         "data": {
-          "description": "Beschrijving"
+          "description": "Beschrijving",
+          "auto_end_enabled": "Reserveringen automatisch afmelden",
+          "mon_enabled": "Maandag",
+          "mon_from": "Maandag van (HH:MM)",
+          "mon_to": "Maandag tot (HH:MM)",
+          "tue_enabled": "Dinsdag",
+          "tue_from": "Dinsdag van (HH:MM)",
+          "tue_to": "Dinsdag tot (HH:MM)",
+          "wed_enabled": "Woensdag",
+          "wed_from": "Woensdag van (HH:MM)",
+          "wed_to": "Woensdag tot (HH:MM)",
+          "thu_enabled": "Donderdag",
+          "thu_from": "Donderdag van (HH:MM)",
+          "thu_to": "Donderdag tot (HH:MM)",
+          "fri_enabled": "Vrijdag",
+          "fri_from": "Vrijdag van (HH:MM)",
+          "fri_to": "Vrijdag tot (HH:MM)",
+          "sat_enabled": "Zaterdag",
+          "sat_from": "Zaterdag van (HH:MM)",
+          "sat_to": "Zaterdag tot (HH:MM)",
+          "sun_enabled": "Zondag",
+          "sun_from": "Zondag van (HH:MM)",
+          "sun_to": "Zondag tot (HH:MM)"
         }
       }
     }
@@ -96,6 +124,9 @@
     },
     "set_config_entry_id_multiple_entries": {
       "message": "Stel `config_entry_id` in omdat er meerdere configuraties zijn"
+    },
+    "start_time_after_working_to": {
+      "message": "Deze reservering start na de ingestelde eindtijd ({working_to}). Maak de reservering na {zone_end}, of pas je werktijden aan."
     }
   }
 }

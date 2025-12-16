@@ -14,6 +14,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 
 from .api import (
     TheHagueParkingAuthError,
@@ -22,7 +23,72 @@ from .api import (
     TheHagueParkingCredentials,
     TheHagueParkingError,
 )
-from .const import CONF_DESCRIPTION, DOMAIN
+from .const import (
+    CONF_AUTO_END_ENABLED,
+    CONF_DESCRIPTION,
+    CONF_SCHEDULE,
+    CONF_WORKDAYS,
+    CONF_WORKING_FROM,
+    CONF_WORKING_TO,
+    DOMAIN,
+)
+
+_DEFAULT_WORKDAYS = [0, 1, 2, 3, 4]  # Mon-Fri
+_DEFAULT_WORKING_FROM = "00:00"
+_DEFAULT_WORKING_TO = "18:00"
+
+_DAY_KEYS: tuple[tuple[int, str], ...] = (
+    (0, "mon"),
+    (1, "tue"),
+    (2, "wed"),
+    (3, "thu"),
+    (4, "fri"),
+    (5, "sat"),
+    (6, "sun"),
+)
+
+
+def _normalize_time(value: str) -> str | None:
+    """Normalize a time string to HH:MM."""
+    if not value:
+        return None
+    parsed = dt_util.parse_time(value)
+    if parsed is None:
+        return None
+    return f"{parsed.hour:02d}:{parsed.minute:02d}"
+
+
+def _parse_workdays(value: object) -> list[int]:
+    if isinstance(value, list) and all(isinstance(day, int) for day in value):
+        return [day for day in value if 0 <= day <= 6]
+    return _DEFAULT_WORKDAYS
+
+
+def _parse_schedule(value: object) -> dict[int, dict[str, object]] | None:
+    """Parse a stored per-day schedule."""
+    if not isinstance(value, dict):
+        return None
+    schedule: dict[int, dict[str, object]] = {}
+    for day, day_value in value.items():
+        if not isinstance(day, int) or not (0 <= day <= 6):
+            continue
+        if not isinstance(day_value, dict):
+            continue
+        schedule[day] = day_value
+    return schedule or None
+
+
+def _zone_time_to_hhmm(value: object) -> str | None:
+    """Convert a zone datetime string to local HH:MM."""
+    if not isinstance(value, str):
+        return None
+    parsed = dt_util.parse_datetime(value)
+    if parsed is None:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    local = dt_util.as_local(parsed)
+    return f"{local.hour:02d}:{local.minute:02d}"
 
 
 class TheHagueParkingConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -191,18 +257,139 @@ class TheHagueParkingOptionsFlowHandler(OptionsFlow):
         """Manage the options."""
         if user_input is not None:
             description = user_input[CONF_DESCRIPTION].strip()
+            if not description:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=self._schema(defaults=user_input),
+                    errors={"base": "description_required"},
+                )
+
             unique_id = self._config_entry.unique_id or self._config_entry.entry_id
+            auto_end_enabled = bool(user_input.get(CONF_AUTO_END_ENABLED, True))
+            schedule: dict[int, dict[str, object]] = {}
+            selected_days = 0
+            for day, key in _DAY_KEYS:
+                enabled = bool(user_input.get(f"{key}_enabled"))
+                from_value = _normalize_time(str(user_input.get(f"{key}_from", "")))
+                to_value = _normalize_time(str(user_input.get(f"{key}_to", "")))
+                if enabled:
+                    selected_days += 1
+                if enabled and (from_value is None or to_value is None):
+                    return self.async_show_form(
+                        step_id="init",
+                        data_schema=self._schema(defaults=user_input),
+                        errors={"base": "invalid_time"},
+                    )
+                if enabled and from_value == to_value:
+                    return self.async_show_form(
+                        step_id="init",
+                        data_schema=self._schema(defaults=user_input),
+                        errors={"base": "invalid_time_range"},
+                    )
+                schedule[day] = {
+                    "enabled": enabled,
+                    "from": from_value or _DEFAULT_WORKING_FROM,
+                    "to": to_value or _DEFAULT_WORKING_TO,
+                }
+
+            if auto_end_enabled and selected_days == 0:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=self._schema(defaults=user_input),
+                    errors={"base": "no_workdays_selected"},
+                )
+
+            options_data = {
+                **self._config_entry.options,
+                CONF_DESCRIPTION: description,
+                CONF_AUTO_END_ENABLED: auto_end_enabled,
+                CONF_SCHEDULE: schedule,
+            }
             self.hass.config_entries.async_update_entry(
                 self._config_entry,
-                options={**self._config_entry.options, CONF_DESCRIPTION: description},
                 title=f"{description} ({unique_id})",
             )
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data=options_data)
 
-        current = str(
-            self._config_entry.options.get(
-                CONF_DESCRIPTION, self._config_entry.data.get(CONF_DESCRIPTION, "")
-            )
+        return self.async_show_form(step_id="init", data_schema=self._schema(defaults=None))
+
+    def _schema(self, *, defaults: dict[str, object] | None) -> vol.Schema:
+        options = self._config_entry.options
+        description = str(
+            options.get(CONF_DESCRIPTION, self._config_entry.data.get(CONF_DESCRIPTION, ""))
         ).strip()
-        data_schema = vol.Schema({vol.Required(CONF_DESCRIPTION, default=current): str})
-        return self.async_show_form(step_id="init", data_schema=data_schema)
+        auto_end_enabled = bool(options.get(CONF_AUTO_END_ENABLED, True))
+        stored_schedule = _parse_schedule(options.get(CONF_SCHEDULE))
+        legacy_workdays = _parse_workdays(options.get(CONF_WORKDAYS))
+        legacy_from = _normalize_time(str(options.get(CONF_WORKING_FROM, "")))
+        legacy_to = _normalize_time(str(options.get(CONF_WORKING_TO, "")))
+
+        base_from = legacy_from
+        base_to = legacy_to
+        if base_from is None or base_to is None:
+            runtime_data = self.hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id)
+            coordinator = getattr(runtime_data, "coordinator", None)
+            account = getattr(getattr(coordinator, "data", None), "account", None)
+            zone = account.get("zone") if isinstance(account, dict) else None
+            if base_from is None:
+                base_from = _zone_time_to_hhmm(
+                    zone.get("start_time") if isinstance(zone, dict) else None
+                )
+            if base_to is None:
+                base_to = _zone_time_to_hhmm(
+                    zone.get("end_time") if isinstance(zone, dict) else None
+                )
+
+        base_from = base_from or _DEFAULT_WORKING_FROM
+        base_to = base_to or _DEFAULT_WORKING_TO
+
+        schedule = stored_schedule or {}
+        schema_dict: dict[vol.Marker, object] = {
+            vol.Required(
+                CONF_DESCRIPTION,
+                default=str(defaults.get(CONF_DESCRIPTION, description)).strip()
+                if defaults
+                else description,
+            ): str,
+            vol.Required(
+                CONF_AUTO_END_ENABLED,
+                default=bool(defaults.get(CONF_AUTO_END_ENABLED, auto_end_enabled))
+                if defaults
+                else auto_end_enabled,
+            ): bool,
+        }
+        for day, key in _DAY_KEYS:
+            day_cfg = schedule.get(day) if isinstance(schedule.get(day), dict) else {}
+            enabled = day_cfg.get("enabled")
+            if enabled is None:
+                enabled = day in legacy_workdays
+            from_value = day_cfg.get("from") if isinstance(day_cfg.get("from"), str) else None
+            to_value = day_cfg.get("to") if isinstance(day_cfg.get("to"), str) else None
+            schema_dict[
+                vol.Required(
+                    f"{key}_enabled",
+                    default=bool(defaults.get(f"{key}_enabled", enabled))
+                    if defaults
+                    else bool(enabled),
+                )
+            ] = bool
+            schema_dict[
+                vol.Required(
+                    f"{key}_from",
+                    default=str(defaults.get(f"{key}_from", from_value or base_from))
+                    if defaults
+                    else (from_value or base_from),
+                )
+            ] = str
+            schema_dict[
+                vol.Required(
+                    f"{key}_to",
+                    default=str(defaults.get(f"{key}_to", to_value or base_to))
+                    if defaults
+                    else (to_value or base_to),
+                )
+            ] = str
+
+        return vol.Schema(
+            schema_dict
+        )

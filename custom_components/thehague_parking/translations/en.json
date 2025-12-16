@@ -28,12 +28,40 @@
     }
   },
   "options": {
+    "error": {
+      "description_required": "Enter a description.",
+      "invalid_time": "Enter times in HH:MM format.",
+      "invalid_time_range": "Start and end time cannot be the same.",
+      "no_workdays_selected": "Select at least one day."
+    },
     "step": {
       "init": {
         "title": "Edit description",
-        "description": "Update the description for this service.",
+        "description": "Update the description and schedule. Active reservations are automatically ended at the end time for each enabled day (overnight is supported).",
         "data": {
-          "description": "Description"
+          "description": "Description",
+          "auto_end_enabled": "Automatically end reservations",
+          "mon_enabled": "Monday",
+          "mon_from": "Monday from (HH:MM)",
+          "mon_to": "Monday to (HH:MM)",
+          "tue_enabled": "Tuesday",
+          "tue_from": "Tuesday from (HH:MM)",
+          "tue_to": "Tuesday to (HH:MM)",
+          "wed_enabled": "Wednesday",
+          "wed_from": "Wednesday from (HH:MM)",
+          "wed_to": "Wednesday to (HH:MM)",
+          "thu_enabled": "Thursday",
+          "thu_from": "Thursday from (HH:MM)",
+          "thu_to": "Thursday to (HH:MM)",
+          "fri_enabled": "Friday",
+          "fri_from": "Friday from (HH:MM)",
+          "fri_to": "Friday to (HH:MM)",
+          "sat_enabled": "Saturday",
+          "sat_from": "Saturday from (HH:MM)",
+          "sat_to": "Saturday to (HH:MM)",
+          "sun_enabled": "Sunday",
+          "sun_from": "Sunday from (HH:MM)",
+          "sun_to": "Sunday to (HH:MM)"
         }
       }
     }
@@ -96,6 +124,9 @@
     },
     "set_config_entry_id_multiple_entries": {
       "message": "Set `config_entry_id` because multiple entries are configured"
+    },
+    "start_time_after_working_to": {
+      "message": "This reservation starts after the configured end time ({working_to}). Create it after {zone_end}, or adjust your schedule."
     }
   }
 }

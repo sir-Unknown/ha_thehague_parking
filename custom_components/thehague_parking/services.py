@@ -1,7 +1,7 @@
 """Service handlers for Den Haag parking."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any
 
 import voluptuous as vol
@@ -14,6 +14,10 @@ from homeassistant.util import dt as dt_util
 
 from .api import TheHagueParkingError
 from .const import (
+    CONF_AUTO_END_ENABLED,
+    CONF_SCHEDULE,
+    CONF_WORKDAYS,
+    CONF_WORKING_TO,
     DOMAIN,
     SERVICE_ADJUST_RESERVATION_END_TIME,
     SERVICE_CREATE_FAVORITE,
@@ -113,6 +117,90 @@ def _get_entry_id(hass: HomeAssistant, call: ServiceCall) -> str:
     return next(iter(entries))
 
 
+def _parse_workdays(value: object) -> set[int]:
+    if isinstance(value, list) and all(isinstance(day, int) for day in value):
+        return {day for day in value if 0 <= day <= 6}
+    return set()
+
+
+def _parse_time(value: object) -> time | None:
+    if not isinstance(value, str):
+        return None
+    return dt_util.parse_time(value)
+
+
+def _is_overnight(from_time: time, to_time: time) -> bool:
+    return from_time > to_time
+
+
+def _schedule_end_for_start(
+    start_time: datetime, options: dict[str, Any]
+) -> tuple[str, datetime] | None:
+    """Return (working_to_hhmm, scheduled_end_utc) for start_time if applicable."""
+    start_local = dt_util.as_local(start_time)
+    weekday = start_local.weekday()
+    prev = (weekday - 1) % 7
+    start_clock = start_local.time().replace(second=0, microsecond=0)
+
+    schedule_opt = options.get(CONF_SCHEDULE)
+    if isinstance(schedule_opt, dict):
+        def _day_cfg(day: int) -> tuple[bool, time, time] | None:
+            cfg = schedule_opt.get(day)
+            if not isinstance(cfg, dict) or not bool(cfg.get("enabled", False)):
+                return None
+            from_time = _parse_time(cfg.get("from")) or dt_util.parse_time("00:00")
+            to_time = _parse_time(cfg.get("to")) or dt_util.parse_time("18:00")
+            if from_time is None or to_time is None:
+                return None
+            return True, from_time, to_time
+
+        today = _day_cfg(weekday)
+        prev_day = _day_cfg(prev)
+        candidates: list[tuple[str, datetime]] = []
+
+        if today is not None:
+            _enabled, from_time, to_time = today
+            if not _is_overnight(from_time, to_time) and start_clock >= to_time:
+                end_local = start_local.replace(
+                    hour=to_time.hour, minute=to_time.minute, second=0, microsecond=0
+                )
+                candidates.append(
+                    (f"{to_time.hour:02d}:{to_time.minute:02d}", _as_utc(end_local))
+                )
+
+        if prev_day is not None:
+            _enabled, from_time, to_time = prev_day
+            if _is_overnight(from_time, to_time) and start_clock >= to_time:
+                end_local = start_local.replace(
+                    hour=to_time.hour, minute=to_time.minute, second=0, microsecond=0
+                )
+                candidates.append(
+                    (f"{to_time.hour:02d}:{to_time.minute:02d}", _as_utc(end_local))
+                )
+
+        if not candidates:
+            return None
+        return max(candidates, key=lambda item: item[1])
+
+    # Legacy fallback: single working_to + optional workdays (no overnight support)
+    working_to_str = options.get(CONF_WORKING_TO)
+    working_to = _parse_time(working_to_str)
+    if working_to is None:
+        return None
+    workdays = _parse_workdays(options.get(CONF_WORKDAYS))
+    if workdays and weekday not in workdays:
+        return None
+    end_local = start_local.replace(
+        hour=working_to.hour, minute=working_to.minute, second=0, microsecond=0
+    )
+    return (f"{working_to.hour:02d}:{working_to.minute:02d}", _as_utc(end_local))
+
+
+def _hhmm(value: datetime) -> str:
+    local = dt_util.as_local(value)
+    return f"{local.hour:02d}:{local.minute:02d}"
+
+
 def _find_reservation(
     reservations: list[dict[str, Any]], reservation_id: int
 ) -> dict[str, Any] | None:
@@ -137,6 +225,8 @@ async def async_register_services(hass: HomeAssistant) -> None:
 
         coordinator = runtime_data.coordinator
         client = coordinator.client
+        entry = hass.config_entries.async_get_entry(entry_id)
+        options = entry.options if entry else {}
 
         start_time = _parse_optional_dt(call.data.get("start_time"), "start_time")
         if start_time is None and call.data.get("start_time_entity_id"):
@@ -145,6 +235,37 @@ async def async_register_services(hass: HomeAssistant) -> None:
             )
         if start_time is None:
             start_time = _as_utc(dt_util.now())
+
+        # If a reservation is created between the configured working end time and the
+        # zone end time, do not create it (it would be auto-ended shortly after).
+        if bool(options.get(CONF_AUTO_END_ENABLED, True)) and (
+            schedule_end := _schedule_end_for_start(start_time, options)
+        ):
+            working_to_hhmm, working_to_utc = schedule_end
+            try:
+                zone = await client.async_fetch_end_time(int(start_time.timestamp()))
+            except TheHagueParkingError:
+                zone = None
+
+            zone_end_str = zone.get("end_time") if zone else None
+            zone_end = (
+                _parse_required_dt(zone_end_str, "zone_end_time")
+                if isinstance(zone_end_str, str)
+                else None
+            )
+            if (
+                zone_end is not None
+                and working_to_utc < zone_end
+                and working_to_utc <= start_time < zone_end
+            ):
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="start_time_after_working_to",
+                    translation_placeholders={
+                        "working_to": working_to_hhmm,
+                        "zone_end": _hhmm(zone_end),
+                    },
+                )
 
         end_time = (
             _parse_optional_dt(call.data.get("end_time"), "end_time")
