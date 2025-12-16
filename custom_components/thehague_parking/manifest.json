@@ -6,6 +6,7 @@
   "documentation": "https://parkerendenhaag.denhaag.nl/",
   "integration_type": "service",
   "iot_class": "cloud_polling",
+  "dependencies": ["frontend"],
   "requirements": [],
-  "version": "0.5.1"
+  "version": "0.8.2"
 }

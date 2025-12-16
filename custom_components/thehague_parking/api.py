@@ -58,10 +58,6 @@ class TheHagueParkingClient:
         self._login_lock = asyncio.Lock()
         self._logged_in = False
 
-    async def async_close(self) -> None:
-        """Close the underlying session."""
-        await self._session.close()
-
     async def async_login(self, *, force: bool = False) -> None:
         """Create or refresh the session cookie using basic auth."""
         async with self._login_lock:
@@ -90,11 +86,6 @@ class TheHagueParkingClient:
         headers = {"x-data-limit": "100", "x-data-offset": "0"}
         return await self._request_json("GET", "/api/favorite", headers=headers)
 
-    async def async_fetch_history(self) -> list[dict[str, Any]]:
-        """Fetch recent history."""
-        headers = {"x-data-limit": "100", "x-data-offset": "0"}
-        return await self._request_json("GET", "/api/history", headers=headers)
-
     async def async_fetch_end_time(self, epoch_seconds: int) -> dict[str, Any]:
         """Fetch the zone start/end time for a given moment."""
         return await self._request_json("GET", f"/api/end-time/{epoch_seconds}")
@@ -117,32 +108,19 @@ class TheHagueParkingClient:
         }
         return await self._request_json("POST", "/api/reservation", json_data=payload)
 
-    async def async_update_reservation(
+    async def async_create_favorite(
         self,
         *,
-        reservation_id: int,
         license_plate: str,
-        name: str | None,
-        start_time: str,
-        end_time: str,
+        name: str,
     ) -> dict[str, Any]:
-        """Update an existing reservation."""
+        """Create a favorite."""
         payload = {
-            "id": reservation_id,
+            "id": None,
             "name": name,
             "license_plate": license_plate,
-            "start_time": start_time,
-            "end_time": end_time,
         }
-        try:
-            return await self._request_json(
-                "PUT", f"/api/reservation/{reservation_id}", json_data=payload
-            )
-        except TheHagueParkingResponseError as err:
-            if err.status not in (404, 405):
-                raise
-
-        return await self._request_json("POST", "/api/reservation", json_data=payload)
+        return await self._request_json("POST", "/api/favorite", json_data=payload)
 
     async def async_patch_reservation_end_time(
         self,

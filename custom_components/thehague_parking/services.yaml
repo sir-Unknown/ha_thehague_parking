@@ -22,7 +22,7 @@ create_reservation:
         text:
     start_time:
       name: Start time
-      description: Optional. Start time as a datetime string, for example `2025-12-15T10:16:57Z`. Required if you do not set `start_time_entity_id`.
+      description: Optional. Start time as a datetime string, for example `2025-12-15T10:16:57Z`. If you omit this and `start_time_entity_id`, the service uses the current time.
       required: false
       selector:
         text:
@@ -65,3 +65,51 @@ delete_reservation:
         number:
           min: 1
           mode: box
+
+adjust_reservation_end_time:
+  name: Adjust reservation end time
+  description: Adjust the end time of an existing reservation.
+  fields:
+    config_entry_id:
+      name: Config entry id
+      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      required: false
+      selector:
+        text:
+    reservation_id:
+      name: Reservation ID
+      description: Reservation ID returned by the API.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    end_time:
+      name: End time
+      description: New end time as a datetime string, for example `2025-12-15T10:16:57Z`.
+      required: true
+      selector:
+        text:
+
+create_favorite:
+  name: Create favorite
+  description: Create a favorite for use in the favorites dropdown.
+  fields:
+    config_entry_id:
+      name: Config entry id
+      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      required: false
+      selector:
+        text:
+    name:
+      name: Name
+      description: Favorite name.
+      required: true
+      selector:
+        text:
+    license_plate:
+      name: License plate
+      description: License plate (for example `AB12CD`).
+      required: true
+      selector:
+        text:

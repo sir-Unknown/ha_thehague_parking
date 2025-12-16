@@ -3,102 +3,60 @@
     "step": {
       "user": {
         "title": "Koppel Den Haag parkeren",
-        "description": "Vul je Den Haag parkeren accountgegevens in.",
+        "description": "Vul je Den Haag parkeren accountgegevens in en geef deze dienst een beschrijving.",
         "data": {
-          "username": "Gebruikersnaam",
-          "password": "Wachtwoord"
+          "username": "Meldnummer",
+          "password": "Pincode",
+          "description": "Beschrijving"
         }
       },
       "reauth_confirm": {
         "title": "Opnieuw aanmelden",
         "description": "Je accountgegevens zijn niet meer geldig. Vul je bijgewerkte accountgegevens in.",
         "data": {
-          "username": "Gebruikersnaam",
-          "password": "Wachtwoord"
+          "username": "Meldnummer",
+          "password": "Pincode"
         }
       }
     },
     "error": {
       "cannot_connect": "Kan geen verbinding maken. Controleer je internetverbinding.",
-      "invalid_auth": "Aanmelden mislukt. Controleer je gebruikersnaam en wachtwoord.",
+      "description_required": "Vul een beschrijving in.",
+      "invalid_auth": "Aanmelden mislukt. Controleer je meldnummer en pincode.",
       "unknown": "Onverwachte fout. Probeer het later opnieuw.",
       "wrong_account": "Dit account komt niet overeen met de bestaande configuratie."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Beschrijving aanpassen",
+        "description": "Wijzig de beschrijving voor deze dienst.",
+        "data": {
+          "description": "Beschrijving"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "debit_minutes": {
-        "name": "Huidige saldo"
+      "account": {
+        "name": "Account"
       },
-      "credit_minutes": {
-        "name": "Totaal af te boeken saldo"
-      },
-      "reservation_count": {
-        "name": "Aantal reserveringen"
-      },
-      "zone_name": {
-        "name": "Zone"
-      },
-      "zone_start_time": {
-        "name": "Betaald parkeren vanaf"
-      },
-      "zone_end_time": {
-        "name": "Betaald parkeren tot"
-      },
-      "active_reservations": {
-        "name": "Actieve reserveringen"
-      },
-      "active_reservation": {
-        "name": "Actieve reservering"
-      }
-    },
-    "datetime": {
-      "start": {
-        "name": "Starttijd"
-      },
-      "end": {
-        "name": "Eindtijd"
-      },
-      "active_reservation_end_time": {
-        "name": "Eindtijd actieve reservering"
-      }
-    },
-    "select": {
       "favorites": {
         "name": "Favorieten"
       },
-      "active_reservation": {
-        "name": "Actieve reservering"
-      }
-    },
-    "text": {
-      "name": {
-        "name": "Naam"
-      },
-      "license_plate": {
-        "name": "Kenteken"
-      }
-    },
-    "switch": {
-      "add_to_favorites": {
-        "name": "Voeg toe aan favorieten"
-      }
-    },
-    "button": {
-      "create_reservation": {
-        "name": "Maak reservering"
-      },
-      "reservation_adjust": {
-        "name": "Reservering aanpassen"
-      },
-      "reservation_end": {
-        "name": "Reservering beëindigen"
+      "reservations": {
+        "name": "Reserveringen"
       }
     }
   },
   "exceptions": {
     "config_entry_not_loaded": {
       "message": "De configuratie is niet geladen."
+    },
+    "could_not_create_favorite": {
+      "message": "Favoriet opslaan mislukt: {error}"
     },
     "could_not_adjust_reservation": {
       "message": "Reservering aanpassen mislukt: {error}"
@@ -111,9 +69,6 @@
     },
     "could_not_determine_zone_end_time": {
       "message": "Kan de zone-eindtijd niet bepalen"
-    },
-    "could_not_end_reservation": {
-      "message": "Reservering beëindigen mislukt: {error}"
     },
     "datetime_entity_no_value": {
       "message": "De `{field}`-entiteit `{entity_id}` heeft geen waarde"
@@ -130,23 +85,8 @@
     "invalid_datetime_string": {
       "message": "`{field}` moet een datum/tijd zijn, maar is: {value}"
     },
-    "missing_end_time": {
-      "message": "Vul een eindtijd in voordat je een reservering maakt"
-    },
-    "missing_license_plate": {
-      "message": "Vul een kenteken in voordat je een reservering maakt"
-    },
-    "missing_new_end_time": {
-      "message": "Vul een nieuwe eindtijd in voordat je de reservering aanpast"
-    },
-    "missing_active_reservation": {
-      "message": "Selecteer eerst een reservering"
-    },
-    "missing_start_time": {
-      "message": "Vul een starttijd in voordat je een reservering maakt"
-    },
-    "reservation_end_time_not_available": {
-      "message": "De eindtijd van de reservering is niet beschikbaar"
+    "missing_favorite_name": {
+      "message": "Vul een naam in voordat je een favoriet opslaat"
     },
     "reservation_not_available": {
       "message": "De reservering is niet beschikbaar"
@@ -156,9 +96,6 @@
     },
     "set_config_entry_id_multiple_entries": {
       "message": "Stel `config_entry_id` in omdat er meerdere configuraties zijn"
-    },
-    "set_start_time_or_entity": {
-      "message": "Stel `start_time` of `start_time_entity_id` in"
     }
   }
 }

@@ -6,6 +6,6 @@
     "lit": "^3.0.0"
   },
   "scripts": {
-    "build": "esbuild src/thehague-parking-card.ts --bundle --format=esm --target=es2021 --outfile=dist/thehague-parking-card.js"
+    "build": "esbuild src/thehague-parking-active-reservation-card.ts src/thehague-parking-new-reservation-card.ts --bundle --format=esm --target=es2021 --outdir=dist"
   }
 }

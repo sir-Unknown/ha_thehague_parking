@@ -7,6 +7,8 @@ from datetime import timedelta
 import logging
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -27,7 +29,6 @@ class TheHagueParkingData:
     account: dict[str, Any]
     reservations: list[dict[str, Any]]
     favorites: list[dict[str, Any]]
-    history: list[dict[str, Any]]
 
 
 class TheHagueParkingCoordinator(DataUpdateCoordinator[TheHagueParkingData]):
@@ -35,10 +36,10 @@ class TheHagueParkingCoordinator(DataUpdateCoordinator[TheHagueParkingData]):
 
     def __init__(
         self,
-        hass,
+        hass: HomeAssistant,
         *,
         client: TheHagueParkingClient,
-        config_entry,
+        config_entry: ConfigEntry,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -55,11 +56,10 @@ class TheHagueParkingCoordinator(DataUpdateCoordinator[TheHagueParkingData]):
         async with self._update_lock:
             try:
                 await self.client.async_login()
-                account, reservations, favorites, history = await asyncio.gather(
+                account, reservations, favorites = await asyncio.gather(
                     self.client.async_fetch_account(),
                     self.client.async_fetch_reservations(),
                     self.client.async_fetch_favorites(),
-                    self.client.async_fetch_history(),
                 )
             except TheHagueParkingAuthError as err:
                 raise UpdateFailed("Authentication failed") from err
@@ -72,5 +72,4 @@ class TheHagueParkingCoordinator(DataUpdateCoordinator[TheHagueParkingData]):
                 account=account,
                 reservations=reservations,
                 favorites=favorites,
-                history=history,
             )
