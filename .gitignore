@@ -1,44 +1,29 @@
 ############################
-# Node / frontend aanvullend
+# Frontend (Node / esbuild)
 ############################
-.pnpm-store/
-.npmrc
-.yarnrc
-.yarnrc.yml
-.eslintcache
-.stylelintcache
-.vite/
-.turbo/
+custom_components/thehague_parking/frontend/node_modules/
+custom_components/thehague_parking/frontend/.npm/
+custom_components/thehague_parking/frontend/.cache/
+custom_components/thehague_parking/frontend/.esbuild/
+
+# Build output (WEL committen)
+# custom_components/thehague_parking/frontend/dist/
 
 ############################
-# Build output (frontend)
+# Python / Home Assistant
 ############################
-out/
-coverage/
-
-############################
-# Secrets / local overrides
-############################
-*.env.*
-secrets.yaml
-config.yaml
-
-############################
-# Home Assistant
-############################
-.storage/
-.storage/*
-deps/
-*.db
-*.db-shm
-*.db-wal
-
-############################
-# Temporary files
-############################
-*.tmp
-*.swp
-*.bak
-
 __pycache__/
 *.pyc
+custom_components/*/__pycache__/
+
+############################
+# Editor / IDE
+############################
+.vscode/
+.idea/
+
+############################
+# OS
+############################
+.DS_Store
+Thumbs.db
