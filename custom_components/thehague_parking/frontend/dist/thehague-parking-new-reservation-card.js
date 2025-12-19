@@ -607,45 +607,37 @@ var en_default = {
     dash: "\u2014"
   },
   active_reservation_card: {
-    card_name: "The Hague parking",
+    card_name: "The Hague Parking",
     card_description: "Show active reservations and end them.",
-    default_title: "The Hague parking",
-    service: "Service",
-    meldnummer: "Registration number",
+    default_title: "The Hague Parking",
+    service: "Config entry",
     title: "Title (optional)",
-    reservations_sensor: "Reservations sensor",
-    set_entity_error: "Set `entity` to the `reservations` sensor",
+    set_entity_error: "Select a `config entry` in the editor, or set `config_entry_id` manually",
     entity_not_found: "Entity not found: {entity}",
     no_active_reservations: "No active reservations",
     reservation_fallback_label: "Reservation",
-    adjust: "Adjust",
-    end: "End",
-    reservation_id_missing: "Reservation ID is missing",
-    invalid_reservation_id: "Invalid reservation ID",
-    pick_new_end_time: "Select a new end time first",
-    invalid_end_time: "Invalid end time",
-    end_time_after_start: "End time must be after start time",
-    end_time_unchanged: "End time is unchanged",
-    could_not_adjust_end_time: "Could not adjust the reservation end time"
+    end: "End"
   },
   new_reservation_card: {
-    card_name: "The Hague parking - new reservation",
+    card_name: "The Hague Parking - new reservation",
     card_description: "Create a new reservation with favorites support.",
     default_title: "New reservation",
-    set_meldnummer_error: "Select a `service` in the editor, or set `config_entry_id` manually. Alternatively, set `entity: sensor.thehague_parking_*_reservations` or `favorites_entity: sensor.thehague_parking_*_favorieten`.",
-    missing_favorites_warning: "No favorites found. Select a `service`, or set `favorites_entity: sensor.thehague_parking_*_favorieten` manually to show favorites.",
-    service: "Service",
-    meldnummer: "Registration number",
-    reservations_sensor: "Reservations sensor (optional)",
-    favorites_sensor: "Favorites sensor (optional)",
+    set_meldnummer_error: "Select a `config entry` in the editor, or set `config_entry_id` manually.",
+    missing_favorites_warning: "No favorites found. Select a `config entry` in the editor, or set `config_entry_id` manually.",
+    service: "Config entry",
     favorites: "Favorites",
+    favorite_fallback_label: "Favorite",
     name: "Name",
     license_plate_required: "License plate (required)",
     add_to_favorites: "Add to favorites",
+    remove_favorite: "Remove favorite",
+    update_favorite: "Update favorite",
     submit: "Submit",
     license_plate_required_error: "Enter a license plate",
     favorite_name_required_error: "Enter a name to save the favorite",
     could_not_save_favorite: "Could not save favorite",
+    could_not_remove_favorite: "Could not remove favorite",
+    could_not_update_favorite: "Could not update favorite",
     could_not_submit: "Could not submit the reservation"
   }
 };
@@ -660,42 +652,34 @@ var nl_default = {
     card_name: "Den Haag parkeren",
     card_description: "Toon actieve reserveringen en be\xEBindig ze.",
     default_title: "Den Haag parkeren",
-    service: "Dienst",
-    meldnummer: "Meldnummer",
+    service: "Configuratie-item",
     title: "Titel (optioneel)",
-    reservations_sensor: "Reserveringen sensor",
-    set_entity_error: "Stel `entity` in op de `reservations` sensor",
+    set_entity_error: "Selecteer een `configuratie-item` in de editor, of stel handmatig `config_entry_id` in",
     entity_not_found: "Entiteit niet gevonden: {entity}",
     no_active_reservations: "Geen actieve reserveringen",
     reservation_fallback_label: "Reservering",
-    adjust: "Aanpassen",
-    end: "Be\xEBindigen",
-    reservation_id_missing: "Reservatie-id ontbreekt",
-    invalid_reservation_id: "Ongeldige reservatie-id",
-    pick_new_end_time: "Kies eerst een nieuwe eindtijd",
-    invalid_end_time: "Ongeldige eindtijd",
-    end_time_after_start: "Eindtijd moet na starttijd liggen",
-    end_time_unchanged: "Eindtijd is ongewijzigd",
-    could_not_adjust_end_time: "Kon de eindtijd van de reservatie niet aanpassen"
+    end: "Be\xEBindigen"
   },
   new_reservation_card: {
     card_name: "Den Haag parkeren - nieuwe reservering",
     card_description: "Maak een nieuwe reservering met favorieten.",
     default_title: "Nieuwe reservering",
-    set_meldnummer_error: "Selecteer een `dienst` in de editor, of stel handmatig `config_entry_id` in. Als alternatief kun je `entity: sensor.thehague_parking_*_reservations` of `favorites_entity: sensor.thehague_parking_*_favorieten` gebruiken.",
-    missing_favorites_warning: "Geen favorieten gevonden. Selecteer een `dienst`, of stel `favorites_entity: sensor.thehague_parking_*_favorieten` handmatig in om favorieten te tonen.",
-    service: "Dienst",
-    meldnummer: "Meldnummer",
-    reservations_sensor: "Reserveringen sensor (optioneel)",
-    favorites_sensor: "Favorieten sensor (optioneel)",
+    set_meldnummer_error: "Selecteer een `configuratie-item` in de editor, of stel handmatig `config_entry_id` in.",
+    missing_favorites_warning: "Geen favorieten gevonden. Selecteer een `configuratie-item` in de editor, of stel handmatig `config_entry_id` in.",
+    service: "Configuratie-item",
     favorites: "Favorieten",
+    favorite_fallback_label: "Favoriet",
     name: "Naam",
     license_plate_required: "Kenteken (verplicht)",
     add_to_favorites: "Toevoegen aan favorieten",
+    remove_favorite: "Verwijder favoriet",
+    update_favorite: "Werk favoriet bij",
     submit: "Aanmelden",
     license_plate_required_error: "Vul een kenteken in",
     favorite_name_required_error: "Vul een naam in om de favoriet op te slaan",
     could_not_save_favorite: "Kon favoriet niet opslaan",
+    could_not_remove_favorite: "Kon favoriet niet verwijderen",
+    could_not_update_favorite: "Kon favoriet niet bijwerken",
     could_not_submit: "Kon de reservering niet aanmelden"
   }
 };
@@ -732,6 +716,31 @@ function localizeLanguage(language, key, placeholders) {
   );
 }
 
+// src/config-entry.ts
+function slugifyId(value) {
+  return value.normalize("NFKD").replaceAll(/[\u0300-\u036f]/g, "").toLowerCase().replaceAll(/[^a-z0-9]+/g, "_").replaceAll(/^_+|_+$/g, "");
+}
+function parseMeldnummerFromTitle(title) {
+  const match = /\((?<id>[^)]+)\)\s*$/.exec(title);
+  return match?.groups?.id?.trim() || void 0;
+}
+async function resolveMeldnummerFromConfigEntry(hass, entryId) {
+  if (!hass?.callWS) return void 0;
+  const entries = await hass.callWS({
+    type: "config_entries/get",
+    domain: "thehague_parking"
+  });
+  const entry = entries.find((e5) => e5.entry_id === entryId);
+  if (!entry) return void 0;
+  if (typeof entry.unique_id === "string") {
+    const uniqueId = entry.unique_id.trim();
+    if (uniqueId && uniqueId.toLowerCase() !== "none") {
+      return uniqueId;
+    }
+  }
+  return parseMeldnummerFromTitle(entry.title);
+}
+
 // src/thehague-parking-new-reservation-card-editor.ts
 var TheHagueParkingNewReservationCardEditor = class extends i4 {
   constructor() {
@@ -746,6 +755,10 @@ var TheHagueParkingNewReservationCardEditor = class extends i4 {
   updated(changedProps) {
     if (!this.hass || this._entriesLoaded) return;
     if (changedProps.has("hass")) {
+      if (!this.hass.user?.is_admin) {
+        this._entriesLoaded = true;
+        return;
+      }
       void this._loadEntries();
     }
   }
@@ -764,18 +777,15 @@ var TheHagueParkingNewReservationCardEditor = class extends i4 {
       this._selectDefaultEntryIfNeeded();
     }
   }
-  _parseMeldnummerFromTitle(title) {
-    const match = /\\((?<id>[^)]+)\\)\\s*$/.exec(title);
-    return match?.groups?.id?.trim() || void 0;
-  }
   _selectDefaultEntryIfNeeded() {
     if (!this._config) return;
     if (!this._entriesLoaded || this._entries.length === 0) return;
-    const meldnummer = (this._config.meldnummer ?? "").trim();
-    const registrationNumber = (this._config.registration_number ?? "").trim();
-    const slug = (this._config.slug ?? "").trim();
-    const hasSelection = !!this._config.config_entry_id || !!this._config.entity || !!this._config.favorites_entity || !!meldnummer || !!registrationNumber || !!slug;
-    if (hasSelection) return;
+    if (this._config.config_entry_id) {
+      if (!this._config.favorites_entity) {
+        this._applyEntry(this._config.config_entry_id);
+      }
+      return;
+    }
     const first = this._entries[0];
     if (!first) return;
     this._applyEntry(first.entry_id);
@@ -783,14 +793,17 @@ var TheHagueParkingNewReservationCardEditor = class extends i4 {
   _applyEntry(entryId) {
     if (!this._config) return;
     const entry = entryId ? this._entries.find((e5) => e5.entry_id === entryId) : void 0;
-    const meldnummer = entry ? this._parseMeldnummerFromTitle(entry.title) : void 0;
-    const slug = meldnummer ?? "";
+    let meldnummer;
+    if (entry) {
+      const uniqueId = typeof entry.unique_id === "string" ? entry.unique_id.trim() : "";
+      meldnummer = uniqueId && uniqueId.toLowerCase() !== "none" ? uniqueId : parseMeldnummerFromTitle(entry.title);
+    }
+    const slug = meldnummer ? slugifyId(meldnummer) : void 0;
+    const preferredFavorites = slug ? `sensor.thehague_parking_${slug}_favorites` : void 0;
     this._config = {
       ...this._config,
       config_entry_id: entryId,
-      meldnummer,
-      ...slug && { entity: `sensor.thehague_parking_${slug}_reservations` },
-      ...slug && { favorites_entity: `sensor.thehague_parking_${slug}_favorieten` }
+      favorites_entity: preferredFavorites
     };
     this.dispatchEvent(
       new CustomEvent("config-changed", {
@@ -802,30 +815,6 @@ var TheHagueParkingNewReservationCardEditor = class extends i4 {
   }
   _entryChanged(ev) {
     this._applyEntry(ev.target.value || void 0);
-  }
-  _valueChanged(ev) {
-    if (!this._config) return;
-    const value = ev.detail.value;
-    this._config = { ...this._config, entity: value };
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: this._config },
-        bubbles: true,
-        composed: true
-      })
-    );
-  }
-  _favoritesChanged(ev) {
-    if (!this._config) return;
-    const value = ev.detail.value;
-    this._config = { ...this._config, favorites_entity: value };
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: this._config },
-        bubbles: true,
-        composed: true
-      })
-    );
   }
   render() {
     if (!this.hass) return E;
@@ -843,24 +832,6 @@ var TheHagueParkingNewReservationCardEditor = class extends i4 {
     )}
           </select>
         </div>
-
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${this._config?.entity ?? ""}
-          .includeDomains=${["sensor"]}
-          .filter=${(eid) => eid.startsWith("sensor.thehague_parking_") && eid.endsWith("_reservations")}
-          label=${localize(this.hass, "new_reservation_card.reservations_sensor")}
-          @value-changed=${this._valueChanged}
-        ></ha-entity-picker>
-
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${this._config?.favorites_entity ?? ""}
-          .includeDomains=${["sensor"]}
-          .filter=${(eid) => eid.startsWith("sensor.thehague_parking_") && (eid.endsWith("_favorieten") || eid.endsWith("_favorites"))}
-          label=${localize(this.hass, "new_reservation_card.favorites_sensor")}
-          @value-changed=${this._favoritesChanged}
-        ></ha-entity-picker>
       </div>
     `;
   }
@@ -915,7 +886,10 @@ var TheHagueParkingNewReservationCard = class extends i4 {
     this._nameDraft = "";
     this._licensePlateDraft = "";
     this._addToFavorites = false;
+    this._updateFavorite = false;
     this._submitting = false;
+    this._deletingFavorite = false;
+    this._updatingFavorite = false;
     this._resolvingService = false;
   }
   setConfig(config) {
@@ -923,37 +897,49 @@ var TheHagueParkingNewReservationCard = class extends i4 {
   }
   updated(changedProps) {
     if (!this.hass || !this._config) return;
-    if (!this.hass.callWS) return;
+    const favoritesEntity = (this._config.favorites_entity ?? "").trim();
+    if (favoritesEntity) return;
     const entryId = this._config.config_entry_id;
     if (!entryId) return;
-    if (this._config.meldnummer || this._config.registration_number || this._config.slug) {
-      return;
+    if (!this.hass.user?.is_admin) return;
+    if (!this.hass.callWS) return;
+    const prevConfig = changedProps.get("_config");
+    const entryIdChanged = changedProps.has("_config") && prevConfig?.config_entry_id !== entryId;
+    if (entryIdChanged) {
+      this._resolvedConfigEntryId = void 0;
+      this._resolvedMeldnummer = void 0;
+      this._lastResolveAttempt = void 0;
+      this._lastResolveEntryId = void 0;
     }
-    if (this._resolvedConfigEntryId === entryId && this._resolvedMeldnummer) {
-      return;
-    }
-    if (changedProps.has("_config") || changedProps.has("hass")) {
-      void this._resolveMeldnummerFromConfigEntry(entryId);
-    }
-  }
-  _parseMeldnummerFromTitle(title) {
-    const match = /\((?<id>[^)]+)\)\s*$/.exec(title);
-    return match?.groups?.id?.trim() || void 0;
+    if (this._resolvingService) return;
+    const shouldResolve = this._resolvedConfigEntryId !== entryId;
+    if (!shouldResolve) return;
+    const now = Date.now();
+    const lastAttemptRelevant = this._lastResolveEntryId === entryId;
+    const retryDue = !lastAttemptRelevant || this._lastResolveAttempt === void 0 || now - this._lastResolveAttempt > 3e4;
+    if (!retryDue) return;
+    this._lastResolveAttempt = now;
+    this._lastResolveEntryId = entryId;
+    void this._resolveMeldnummerFromConfigEntry(entryId);
   }
   async _resolveMeldnummerFromConfigEntry(entryId) {
     if (!this.hass?.callWS) return;
     this._resolvingService = true;
     try {
-      const entries = await this.hass.callWS({
-        type: "config_entries/get",
-        domain: "thehague_parking"
-      });
-      const entry = entries.find((e5) => e5.entry_id === entryId);
-      this._resolvedConfigEntryId = entryId;
-      this._resolvedMeldnummer = entry ? this._parseMeldnummerFromTitle(entry.title) : void 0;
+      const resolved = await resolveMeldnummerFromConfigEntry(
+        this.hass,
+        entryId
+      );
+      if (resolved) {
+        this._resolvedMeldnummer = resolved;
+        this._resolvedConfigEntryId = entryId;
+      } else {
+        this._resolvedMeldnummer = void 0;
+        this._resolvedConfigEntryId = void 0;
+      }
     } catch (_err) {
-      this._resolvedConfigEntryId = entryId;
       this._resolvedMeldnummer = void 0;
+      this._resolvedConfigEntryId = void 0;
     } finally {
       this._resolvingService = false;
     }
@@ -963,8 +949,7 @@ var TheHagueParkingNewReservationCard = class extends i4 {
   }
   static getStubConfig() {
     return {
-      type: "custom:thehague-parking-new-reservation-card",
-      meldnummer: ""
+      type: "custom:thehague-parking-new-reservation-card"
     };
   }
   getCardSize() {
@@ -972,17 +957,10 @@ var TheHagueParkingNewReservationCard = class extends i4 {
   }
   get _slug() {
     if (!this._config) return void 0;
-    if (this._config.meldnummer) return this._config.meldnummer;
-    if (this._config.registration_number) return this._config.registration_number;
-    if (this._config.slug) return this._config.slug;
     if (this._config.config_entry_id && this._resolvedConfigEntryId === this._config.config_entry_id && this._resolvedMeldnummer) {
       return this._resolvedMeldnummer;
     }
-    if (!this._config.entity) return void 0;
-    const match = /^sensor\\.thehague_parking_(?<slug>.+)_(?:active_reservations|reservations)$/.exec(
-      this._config.entity
-    );
-    return match?.groups?.slug;
+    return void 0;
   }
   _notify(message) {
     this.dispatchEvent(
@@ -993,26 +971,15 @@ var TheHagueParkingNewReservationCard = class extends i4 {
       })
     );
   }
-  _getEntityId(override, fallbackSuffix) {
-    if (override) return override;
-    const slug = this._slug;
-    return slug ? `${fallbackSuffix.replace("*", slug)}` : void 0;
-  }
   get _favoritesEntityId() {
-    if (this._config?.favorites_entity) {
-      return this._config.favorites_entity;
-    }
+    const override = (this._config?.favorites_entity ?? "").trim();
+    if (override) return override;
     const slug = this._slug;
     if (!slug) {
       return void 0;
     }
-    const preferred = `sensor.thehague_parking_${slug}_favorieten`;
-    const fallback = `sensor.thehague_parking_${slug}_favorites`;
-    if (!this.hass) {
-      return preferred;
-    }
-    if (this.hass.states[preferred]) return preferred;
-    if (this.hass.states[fallback]) return fallback;
+    const slugId = slugifyId(slug);
+    const preferred = `sensor.thehague_parking_${slugId}_favorites`;
     return preferred;
   }
   _state(entityId) {
@@ -1029,17 +996,151 @@ var TheHagueParkingNewReservationCard = class extends i4 {
     const name = (favorite.name ?? "").trim();
     const plate = (favorite.license_plate ?? "").trim();
     if (name && plate) return `${name} - ${plate}`;
-    return name || plate || "Favoriet";
+    return name || plate || localize(this.hass, "new_reservation_card.favorite_fallback_label");
+  }
+  _normalizeName(value) {
+    return value.trim().toLowerCase();
+  }
+  _normalizePlate(value) {
+    return value.trim().toUpperCase().replaceAll(/[^A-Z0-9]/g, "");
+  }
+  _favoriteMatchesDraft(favorite, name, plate) {
+    return this._normalizeName(favorite.name ?? "") === this._normalizeName(name) && this._normalizePlate(favorite.license_plate ?? "") === this._normalizePlate(plate);
+  }
+  _findFavoriteIndexByDraft(name, plate) {
+    if (!name.trim() || !plate.trim()) return void 0;
+    const favorites = this._favorites;
+    for (let i5 = 0; i5 < favorites.length; i5++) {
+      if (this._favoriteMatchesDraft(favorites[i5], name, plate)) return i5;
+    }
+    return void 0;
+  }
+  get _selectedFavoriteIndex() {
+    const indexValue = this._favoriteDraft;
+    if (!indexValue) return void 0;
+    const index = Number(indexValue);
+    if (!Number.isFinite(index) || index < 0 || index >= this._favorites.length) {
+      return void 0;
+    }
+    return index;
+  }
+  get _selectedFavorite() {
+    const index = this._selectedFavoriteIndex;
+    return index !== void 0 ? this._favorites[index] : void 0;
+  }
+  get _selectedFavoriteId() {
+    const id = this._selectedFavorite?.id;
+    if (typeof id === "number" && Number.isFinite(id)) return id;
+    if (typeof id === "string" && id.trim() !== "" && !Number.isNaN(Number(id))) {
+      return Number(id);
+    }
+    return void 0;
+  }
+  get _busy() {
+    return this._submitting || this._deletingFavorite || this._updatingFavorite;
+  }
+  get _draftMatchesExistingFavorite() {
+    return this._findFavoriteIndexByDraft(this._nameDraft, this._licensePlateDraft) !== void 0;
+  }
+  get _showAddToFavorites() {
+    if (!this._nameDraft.trim() || !this._licensePlateDraft.trim()) return false;
+    if (this._selectedFavorite && !this._selectedFavoriteChangedBoth) return false;
+    return !this._draftMatchesExistingFavorite;
+  }
+  get _selectedFavoriteChanged() {
+    const selected = this._selectedFavorite;
+    if (!selected) return false;
+    return !this._favoriteMatchesDraft(selected, this._nameDraft, this._licensePlateDraft);
+  }
+  get _selectedFavoriteNameChanged() {
+    const selected = this._selectedFavorite;
+    if (!selected) return false;
+    return this._normalizeName(selected.name ?? "") !== this._normalizeName(this._nameDraft);
+  }
+  get _selectedFavoritePlateChanged() {
+    const selected = this._selectedFavorite;
+    if (!selected) return false;
+    return this._normalizePlate(selected.license_plate ?? "") !== this._normalizePlate(this._licensePlateDraft);
+  }
+  get _selectedFavoriteChangedBoth() {
+    return this._selectedFavoriteNameChanged && this._selectedFavoritePlateChanged;
+  }
+  _maybeResetFavoriteSelection() {
+    if (!this._selectedFavorite) return;
+    if (!this._selectedFavoriteChangedBoth) return;
+    this._favoriteDraft = "";
+    this._updateFavorite = false;
+  }
+  get _draftDuplicatesOtherFavorite() {
+    const selectedIndex = this._selectedFavoriteIndex;
+    if (selectedIndex === void 0) return false;
+    const matchingIndex = this._findFavoriteIndexByDraft(
+      this._nameDraft,
+      this._licensePlateDraft
+    );
+    return matchingIndex !== void 0 && matchingIndex !== selectedIndex;
+  }
+  get _offerUpdateFavorite() {
+    if (!this._selectedFavorite) return false;
+    return this._selectedFavoriteChanged && !this._selectedFavoriteChangedBoth;
+  }
+  get _canUpdateFavorite() {
+    if (!this._offerUpdateFavorite) return false;
+    if (!this._nameDraft.trim() || !this._licensePlateDraft.trim()) return false;
+    return !this._draftDuplicatesOtherFavorite;
+  }
+  _syncFavoriteToggles() {
+    if (this._selectedFavorite) {
+      if (!this._showAddToFavorites) {
+        this._addToFavorites = false;
+      }
+      if (!this._canUpdateFavorite) {
+        this._updateFavorite = false;
+      }
+      return;
+    }
+    this._updateFavorite = false;
+    if (!this._showAddToFavorites) {
+      this._addToFavorites = false;
+    }
   }
   _selectFavorite(indexValue) {
     this._favoriteDraft = indexValue;
-    if (!indexValue) return;
+    this._addToFavorites = false;
+    this._updateFavorite = false;
+    if (!indexValue) {
+      this._nameDraft = "";
+      this._licensePlateDraft = "";
+      this._syncFavoriteToggles();
+      return;
+    }
     const index = Number(indexValue);
     if (!Number.isFinite(index) || index < 0 || index >= this._favorites.length) return;
     const favorite = this._favorites[index];
     if (!favorite) return;
     this._nameDraft = (favorite.name ?? "").trim();
     this._licensePlateDraft = (favorite.license_plate ?? "").trim();
+    this._syncFavoriteToggles();
+  }
+  async _deleteFavorite() {
+    if (!this.hass || !this._config) return;
+    if (!this._selectedFavoriteId) return;
+    this._deletingFavorite = true;
+    try {
+      await this.hass.callService("thehague_parking", "delete_favorite", {
+        favorite_id: this._selectedFavoriteId,
+        ...this._config.config_entry_id && {
+          config_entry_id: this._config.config_entry_id
+        }
+      });
+      this._favoriteDraft = "";
+      this._updateFavorite = false;
+      this._syncFavoriteToggles();
+    } catch (_err) {
+      this._notify(localize(this.hass, "new_reservation_card.could_not_remove_favorite"));
+    } finally {
+      this._deletingFavorite = false;
+    }
   }
   async _submit() {
     if (!this.hass || !this._config) return;
@@ -1048,6 +1149,11 @@ var TheHagueParkingNewReservationCard = class extends i4 {
       this._notify(localize(this.hass, "new_reservation_card.license_plate_required_error"));
       return;
     }
+    const selectedFavoriteId = this._selectedFavoriteId;
+    const shouldUpdateFavorite = Boolean(
+      selectedFavoriteId && this._updateFavorite && this._canUpdateFavorite && this._selectedFavoriteChanged
+    );
+    const shouldAddFavorite = Boolean(this._addToFavorites && this._showAddToFavorites);
     this._submitting = true;
     try {
       await this.hass.callService("thehague_parking", "create_reservation", {
@@ -1057,9 +1163,35 @@ var TheHagueParkingNewReservationCard = class extends i4 {
           config_entry_id: this._config.config_entry_id
         }
       });
-      if (this._addToFavorites) {
+      if (shouldUpdateFavorite) {
         if (!this._nameDraft.trim()) {
-          this._notify(localize(this.hass, "new_reservation_card.favorite_name_required_error"));
+          this._notify(
+            localize(this.hass, "new_reservation_card.favorite_name_required_error")
+          );
+        } else {
+          this._updatingFavorite = true;
+          try {
+            await this.hass.callService("thehague_parking", "update_favorite", {
+              favorite_id: selectedFavoriteId,
+              name: this._nameDraft.trim(),
+              license_plate: licensePlate,
+              ...this._config.config_entry_id && {
+                config_entry_id: this._config.config_entry_id
+              }
+            });
+          } catch (_err) {
+            this._notify(
+              localize(this.hass, "new_reservation_card.could_not_update_favorite")
+            );
+          } finally {
+            this._updatingFavorite = false;
+          }
+        }
+      } else if (shouldAddFavorite) {
+        if (!this._nameDraft.trim()) {
+          this._notify(
+            localize(this.hass, "new_reservation_card.favorite_name_required_error")
+          );
         } else {
           try {
             await this.hass.callService("thehague_parking", "create_favorite", {
@@ -1078,6 +1210,7 @@ var TheHagueParkingNewReservationCard = class extends i4 {
       this._nameDraft = "";
       this._licensePlateDraft = "";
       this._addToFavorites = false;
+      this._updateFavorite = false;
     } catch (_err) {
       this._notify(localize(this.hass, "new_reservation_card.could_not_submit"));
     } finally {
@@ -1087,23 +1220,20 @@ var TheHagueParkingNewReservationCard = class extends i4 {
   render() {
     if (!this.hass || !this._config) return E;
     const title = this._config.title ?? localize(this.hass, "new_reservation_card.default_title");
-    if (!this._slug && !this._config.entity && !this._config.favorites_entity && !this._config.config_entry_id) {
-      return x`
-        <ha-card header=${title}>
-          <div class="card-content">
-            <div class="warning">
-              ${localize(this.hass, "new_reservation_card.set_meldnummer_error")}
-            </div>
-          </div>
-        </ha-card>
-      `;
-    }
-    const missingFavorites = !this._favoritesEntityId;
+    const missingEntryId = !this._config.config_entry_id;
+    const favoritesState = this._favoritesState;
+    const missingFavorites = !favoritesState || favoritesState.state === "unavailable" || favoritesState.state === "unknown";
+    const showMissingFavoritesWarning = !this._resolvingService && missingFavorites;
+    const canDeleteFavorite = Boolean(this._selectedFavoriteId);
+    const showDeleteFavorite = canDeleteFavorite && !this._offerUpdateFavorite && !this._showAddToFavorites;
     return x`
       <ha-card header=${title}>
         <div class="card-content">
+          ${missingEntryId ? x`<div class="warning">
+                ${localize(this.hass, "new_reservation_card.set_meldnummer_error")}
+              </div>` : E}
           ${this._config.config_entry_id && this._resolvingService ? x`<div class="empty">${localize(this.hass, "common.working")}</div>` : E}
-          ${missingFavorites ? x`<div class="warning">
+          ${showMissingFavoritesWarning ? x`<div class="warning">
                 ${localize(this.hass, "new_reservation_card.missing_favorites_warning")}
               </div>` : E}
 
@@ -1112,7 +1242,7 @@ var TheHagueParkingNewReservationCard = class extends i4 {
             <select
               class="select"
               .value=${this._favoriteDraft}
-              ?disabled=${missingFavorites || this._submitting}
+              ?disabled=${missingFavorites || this._busy}
               @change=${(ev) => this._selectFavorite(ev.target.value)}
             >
               <option value="">${localize(this.hass, "common.dash")}</option>
@@ -1130,9 +1260,11 @@ var TheHagueParkingNewReservationCard = class extends i4 {
               class="input"
               type="text"
               .value=${this._nameDraft}
-              ?disabled=${this._submitting}
+              ?disabled=${this._busy}
               @input=${(ev) => {
       this._nameDraft = ev.target.value;
+      this._maybeResetFavoriteSelection();
+      this._syncFavoriteToggles();
     }}
             />
           </div>
@@ -1146,29 +1278,67 @@ var TheHagueParkingNewReservationCard = class extends i4 {
               type="text"
               required
               .value=${this._licensePlateDraft}
-              ?disabled=${this._submitting}
+              ?disabled=${this._busy}
               @input=${(ev) => {
       this._licensePlateDraft = ev.target.value;
+      this._maybeResetFavoriteSelection();
+      this._syncFavoriteToggles();
     }}
             />
           </div>
 
           <div class="row">
-            <label class="switch-row">
-              <input
-                type="checkbox"
-                .checked=${this._addToFavorites}
-                ?disabled=${this._submitting}
-                @change=${(ev) => {
+            ${this._offerUpdateFavorite ? x`
+                  <label class="switch-row">
+                    <input
+                      type="checkbox"
+                      .checked=${this._updateFavorite}
+                      ?disabled=${this._busy || !this._canUpdateFavorite}
+                      @change=${(ev) => {
+      this._updateFavorite = ev.target.checked;
+    }}
+                    />
+                    <span>
+                      ${localize(this.hass, "new_reservation_card.update_favorite")}
+                    </span>
+                  </label>
+                ` : showDeleteFavorite ? x`
+                  <div class="switch-row">
+                    <button
+                      type="button"
+                      class="icon-button"
+                      aria-label=${localize(
+      this.hass,
+      "new_reservation_card.remove_favorite"
+    )}
+                      ?disabled=${this._busy}
+                      @click=${this._deleteFavorite}
+                    >
+                      <ha-icon icon="mdi:delete" class="danger-icon"></ha-icon>
+                    </button>
+                    <span>
+                      ${localize(this.hass, "new_reservation_card.remove_favorite")}
+                    </span>
+                  </div>
+                ` : this._showAddToFavorites ? x`
+                    <label class="switch-row">
+                      <input
+                        type="checkbox"
+                        .checked=${this._addToFavorites}
+                        ?disabled=${this._busy}
+                        @change=${(ev) => {
       this._addToFavorites = ev.target.checked;
     }}
-              />
-              <span>${localize(this.hass, "new_reservation_card.add_to_favorites")}</span>
-            </label>
+                      />
+                      <span>
+                        ${localize(this.hass, "new_reservation_card.add_to_favorites")}
+                      </span>
+                    </label>
+                  ` : x`<div></div>`}
 
             <ha-button
               appearance="filled"
-              .disabled=${this._submitting || !this._licensePlateDraft.trim()}
+              .disabled=${this._busy || !this._licensePlateDraft.trim()}
               @click=${this._submit}
             >
               ${this._submitting ? localize(this.hass, "common.working") : localize(this.hass, "new_reservation_card.submit")}
@@ -1225,6 +1395,33 @@ TheHagueParkingNewReservationCard.styles = i`
       gap: 10px;
       min-height: 40px;
     }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font: inherit;
+      line-height: 0;
+      cursor: pointer;
+    }
+
+    .danger-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--error-color);
+      --mdc-icon-size: 16px;
+      --ha-icon-size: 16px;
+    }
+
+    .icon-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   `;
 __decorateClass([
   n4({ attribute: false })
@@ -1246,7 +1443,16 @@ __decorateClass([
 ], TheHagueParkingNewReservationCard.prototype, "_addToFavorites", 2);
 __decorateClass([
   r5()
+], TheHagueParkingNewReservationCard.prototype, "_updateFavorite", 2);
+__decorateClass([
+  r5()
 ], TheHagueParkingNewReservationCard.prototype, "_submitting", 2);
+__decorateClass([
+  r5()
+], TheHagueParkingNewReservationCard.prototype, "_deletingFavorite", 2);
+__decorateClass([
+  r5()
+], TheHagueParkingNewReservationCard.prototype, "_updatingFavorite", 2);
 __decorateClass([
   r5()
 ], TheHagueParkingNewReservationCard.prototype, "_resolvingService", 2);

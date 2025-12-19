@@ -3,8 +3,8 @@ create_reservation:
   description: Create a parking reservation.
   fields:
     config_entry_id:
-      name: Config entry id
-      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
       required: false
       selector:
         text:
@@ -52,8 +52,8 @@ delete_reservation:
   description: Delete a parking reservation by its ID.
   fields:
     config_entry_id:
-      name: Config entry id
-      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
       required: false
       selector:
         text:
@@ -71,8 +71,8 @@ adjust_reservation_end_time:
   description: Adjust the end time of an existing reservation.
   fields:
     config_entry_id:
-      name: Config entry id
-      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
       required: false
       selector:
         text:
@@ -96,11 +96,61 @@ create_favorite:
   description: Create a favorite for use in the favorites dropdown.
   fields:
     config_entry_id:
-      name: Config entry id
-      description: Optional. Required when you have multiple Den Haag parkeren integrations configured.
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
       required: false
       selector:
         text:
+    name:
+      name: Name
+      description: Favorite name.
+      required: true
+      selector:
+        text:
+    license_plate:
+      name: License plate
+      description: License plate (for example `AB12CD`).
+      required: true
+      selector:
+        text:
+
+delete_favorite:
+  name: Delete favorite
+  description: Delete a favorite by its ID.
+  fields:
+    config_entry_id:
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
+      required: false
+      selector:
+        text:
+    favorite_id:
+      name: Favorite ID
+      description: Favorite ID returned by the API.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+
+update_favorite:
+  name: Update favorite
+  description: Update a favorite by its ID.
+  fields:
+    config_entry_id:
+      name: Config entry ID
+      description: Optional. Required when you have multiple The Hague Parking integrations configured.
+      required: false
+      selector:
+        text:
+    favorite_id:
+      name: Favorite ID
+      description: Favorite ID returned by the API.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
     name:
       name: Name
       description: Favorite name.

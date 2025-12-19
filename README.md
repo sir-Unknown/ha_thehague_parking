@@ -4,11 +4,12 @@ This repository contains a Home Assistant custom integration that connects to `p
 
 ## Features
 
-- Config flow with required description (entry title becomes `<description> (<registration number>)`)
+- Config flow (UI) using your The Hague Parking credentials
+- Options flow to configure auto-end and your schedule
 - Sensors:
-  - `sensor.thehague_parking_<meldnummer>_account` (zone + debit minutes in attributes)
-  - `sensor.thehague_parking_<meldnummer>_reservations` (reservation count + list in attributes)
-  - `sensor.thehague_parking_<meldnummer>_favorieten` (favorites count + list in attributes)
+  - `sensor.thehague_parking_<id>_account` (zone + debit minutes in attributes)
+  - `sensor.thehague_parking_<id>_reservations` (reservation count + list in attributes)
+  - `sensor.thehague_parking_<id>_favorites` (favorites count + list in attributes)
 - Services to create/delete reservations and manage favorites
 - Lovelace custom cards (auto-loaded by the integration):
   - Active reservations card (end reservation)
@@ -26,11 +27,12 @@ During setup you will be asked for:
 
 - Registration number (NL: meldnummer)
 - Pin code (NL: pincode)
-- Description (required)
 
-You can edit the description later via the integration options (gear icon). The entry title is shown as:
+After setup, open the integration options (gear icon) to configure:
 
-`<description> (<meldnummer>)`
+- A required `description` (for your own reference)
+- Whether reservations created by this integration should be automatically ended
+- Your schedule (per weekday)
 
 ## Services
 
@@ -40,7 +42,9 @@ You can edit the description later via the integration options (gear icon). The 
 - `license_plate`: License plate (required)
 - `name`: Optional label
 - `start_time`: ISO datetime (optional). If omitted, the reservation starts now.
+- `start_time_entity_id`: `datetime` entity ID (optional). Alternative for `start_time`.
 - `end_time`: ISO datetime (optional). If omitted, the integration calls `/api/end-time/<start_time_epoch>` and uses the returned `end_time`.
+- `end_time_entity_id`: `datetime` entity ID (optional). Alternative for `end_time`.
 
 ### `thehague_parking.delete_reservation`
 
@@ -50,6 +54,18 @@ You can edit the description later via the integration options (gear icon). The 
 ### `thehague_parking.create_favorite`
 
 - `config_entry_id`: Optional. Required when you have multiple entries configured
+- `license_plate`: License plate (required)
+- `name`: Name (required)
+
+### `thehague_parking.delete_favorite`
+
+- `config_entry_id`: Optional. Required when you have multiple entries configured
+- `favorite_id`: Favorite id (required)
+
+### `thehague_parking.update_favorite`
+
+- `config_entry_id`: Optional. Required when you have multiple entries configured
+- `favorite_id`: Favorite id (required)
 - `license_plate`: License plate (required)
 - `name`: Name (required)
 
@@ -82,3 +98,9 @@ title: Nieuwe reservering
 ## Notes
 
 - The integration uses basic authentication only for the login call (`/api/session/0`) and relies on the session cookies for the other API calls.
+
+## Removal
+
+1. Go to **Settings** → **Devices & services**.
+2. Select **Den Haag parkeren**.
+3. Use the overflow menu (⋮) → **Delete**.

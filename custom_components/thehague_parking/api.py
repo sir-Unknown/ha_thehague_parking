@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+import json
 import logging
 from typing import Any
 
@@ -22,7 +23,7 @@ class TheHagueParkingResponseError(TheHagueParkingError):
 
     def __init__(self, status: int, body: str) -> None:
         """Initialize the exception."""
-        super().__init__(f"Unexpected response {status}: {body}")
+        super().__init__(f"Unexpected response {status}")
         self.status = status
         self.body = body
 
@@ -51,10 +52,14 @@ class TheHagueParkingClient:
         *,
         session: aiohttp.ClientSession,
         credentials: TheHagueParkingCredentials,
+        base_url: str = API_BASE_URL,
+        timeout: float = 20,
     ) -> None:
         """Initialize the client."""
         self._session = session
         self._credentials = credentials
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
         self._login_lock = asyncio.Lock()
         self._logged_in = False
 
@@ -122,6 +127,27 @@ class TheHagueParkingClient:
         }
         return await self._request_json("POST", "/api/favorite", json_data=payload)
 
+    async def async_update_favorite(
+        self,
+        *,
+        favorite_id: int,
+        license_plate: str,
+        name: str,
+    ) -> dict[str, Any]:
+        """Update a favorite."""
+        payload = {"name": name, "license_plate": license_plate}
+        path = f"/api/favorite/{favorite_id}"
+        try:
+            return await self._request_json("PATCH", path, json_data=payload)
+        except TheHagueParkingResponseError as err:
+            if err.status != 405:
+                raise
+        return await self._request_json("PUT", path, json_data=payload)
+
+    async def async_delete_favorite(self, favorite_id: int) -> None:
+        """Delete a favorite."""
+        await self._request_json("DELETE", f"/api/favorite/{favorite_id}")
+
     async def async_patch_reservation_end_time(
         self,
         *,
@@ -179,7 +205,7 @@ class TheHagueParkingClient:
         json_data: Any | None = None,
         auth: bool,
     ) -> Any:
-        url = f"{API_BASE_URL}{path}"
+        url = f"{self._base_url}{path}"
         request_headers = {
             "accept": "application/json",
             "x-requested-with": "angular",
@@ -195,28 +221,30 @@ class TheHagueParkingClient:
             )
 
         try:
-            async with asyncio.timeout(20):
-                response = await self._session.request(
+            async with asyncio.timeout(self._timeout):
+                async with self._session.request(
                     method,
                     url,
                     headers=request_headers,
                     json=json_data,
                     auth=basic_auth,
-                )
+                ) as response:
+                    if response.status in (401, 403):
+                        raise TheHagueParkingAuthError
+
+                    if response.status >= 400:
+                        raise TheHagueParkingResponseError(
+                            response.status, await response.text()
+                        )
+
+                    if response.status == 204:
+                        return None
+
+                    try:
+                        return await response.json(content_type=None)
+                    except (aiohttp.ClientResponseError, json.JSONDecodeError) as err:
+                        raise TheHagueParkingResponseError(
+                            response.status, await response.text()
+                        ) from err
         except (TimeoutError, aiohttp.ClientError) as err:
             raise TheHagueParkingConnectionError from err
-
-        if response.status == 401:
-            await response.release()
-            raise TheHagueParkingAuthError
-
-        if response.status >= 400:
-            body = await response.text()
-            await response.release()
-            raise TheHagueParkingResponseError(response.status, body)
-
-        if response.status == 204:
-            await response.release()
-            return None
-
-        return await response.json()

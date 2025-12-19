@@ -9,6 +9,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -50,26 +51,32 @@ class TheHagueParkingCoordinator(DataUpdateCoordinator[TheHagueParkingData]):
             config_entry=config_entry,
         )
         self.client = client
-        self._update_lock = asyncio.Lock()
+        self._unavailable_logged = False
 
     async def _async_update_data(self) -> TheHagueParkingData:
-        async with self._update_lock:
-            try:
-                await self.client.async_login()
-                account, reservations, favorites = await asyncio.gather(
-                    self.client.async_fetch_account(),
-                    self.client.async_fetch_reservations(),
-                    self.client.async_fetch_favorites(),
-                )
-            except TheHagueParkingAuthError as err:
-                raise UpdateFailed("Authentication failed") from err
-            except TheHagueParkingConnectionError as err:
-                raise UpdateFailed("Cannot connect") from err
-            except TheHagueParkingError as err:
-                raise UpdateFailed(str(err)) from err
-
-            return TheHagueParkingData(
-                account=account,
-                reservations=reservations,
-                favorites=favorites,
+        try:
+            await self.client.async_login()
+            account, reservations, favorites = await asyncio.gather(
+                self.client.async_fetch_account(),
+                self.client.async_fetch_reservations(),
+                self.client.async_fetch_favorites(),
             )
+        except TheHagueParkingAuthError as err:
+            raise ConfigEntryAuthFailed("Authentication failed") from err
+        except TheHagueParkingConnectionError as err:
+            if not self._unavailable_logged:
+                _LOGGER.info("The service is unavailable: %s", err)
+                self._unavailable_logged = True
+            raise UpdateFailed("Cannot connect") from err
+        except TheHagueParkingError as err:
+            raise UpdateFailed(str(err)) from err
+
+        if self._unavailable_logged:
+            _LOGGER.info("The service is back online")
+            self._unavailable_logged = False
+
+        return TheHagueParkingData(
+            account=account,
+            reservations=reservations,
+            favorites=favorites,
+        )

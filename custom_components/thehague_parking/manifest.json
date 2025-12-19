@@ -1,6 +1,6 @@
 {
   "domain": "thehague_parking",
-  "name": "Den Haag parkeren",
+  "name": "The Hague Parking",
   "codeowners": ["@sir-Unkown"],
   "config_flow": true,
   "documentation": "https://parkerendenhaag.denhaag.nl/",

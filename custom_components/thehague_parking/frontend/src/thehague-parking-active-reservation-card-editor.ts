@@ -1,19 +1,18 @@
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
+import { parseMeldnummerFromTitle, slugifyId } from "./config-entry";
 import { localize } from "./localize";
 
 type HomeAssistant = {
   states: Record<string, unknown>;
   callWS: <T>(msg: Record<string, unknown>) => Promise<T>;
+  user?: { is_admin: boolean };
 };
 
 type TheHagueParkingActiveReservationCardConfig = {
   type: string;
   entity?: string;
-  meldnummer?: string;
-  registration_number?: string;
-  slug?: string;
   title?: string;
   config_entry_id?: string;
 };
@@ -22,6 +21,7 @@ type ConfigEntryFragment = {
   entry_id: string;
   domain: string;
   title: string;
+  unique_id?: string | null;
 };
 
 @customElement("thehague-parking-active-reservation-card-editor")
@@ -41,6 +41,10 @@ export class TheHagueParkingActiveReservationCardEditor extends LitElement {
   protected updated(changedProps: Map<string, unknown>) {
     if (!this.hass || this._entriesLoaded) return;
     if (changedProps.has("hass")) {
+      if (!this.hass.user?.is_admin) {
+        this._entriesLoaded = true;
+        return;
+      }
       void this._loadEntries();
     }
   }
@@ -61,25 +65,16 @@ export class TheHagueParkingActiveReservationCardEditor extends LitElement {
     }
   }
 
-  private _parseMeldnummerFromTitle(title: string): string | undefined {
-    const match = /\\((?<id>[^)]+)\\)\\s*$/.exec(title);
-    return match?.groups?.id?.trim() || undefined;
-  }
-
   private _selectDefaultEntryIfNeeded(): void {
     if (!this._config) return;
     if (!this._entriesLoaded || this._entries.length === 0) return;
 
-    const meldnummer = (this._config.meldnummer ?? "").trim();
-    const registrationNumber = (this._config.registration_number ?? "").trim();
-    const slug = (this._config.slug ?? "").trim();
-    const hasSelection =
-      !!this._config.config_entry_id ||
-      !!this._config.entity ||
-      !!meldnummer ||
-      !!registrationNumber ||
-      !!slug;
-    if (hasSelection) return;
+    if (this._config.config_entry_id) {
+      if (!this._config.entity) {
+        this._applyEntry(this._config.config_entry_id);
+      }
+      return;
+    }
 
     const first = this._entries[0];
     if (!first) return;
@@ -91,14 +86,26 @@ export class TheHagueParkingActiveReservationCardEditor extends LitElement {
     const entry = entryId
       ? this._entries.find((e) => e.entry_id === entryId)
       : undefined;
-    const meldnummer = entry ? this._parseMeldnummerFromTitle(entry.title) : undefined;
-    const slug = meldnummer?.trim() ?? "";
+
+    let meldnummer: string | undefined;
+    if (entry) {
+      const uniqueId =
+        typeof entry.unique_id === "string" ? entry.unique_id.trim() : "";
+      meldnummer =
+        uniqueId && uniqueId.toLowerCase() !== "none"
+          ? uniqueId
+          : parseMeldnummerFromTitle(entry.title);
+    }
+
+    const slug = meldnummer ? slugifyId(meldnummer) : undefined;
+    const entity = slug
+      ? `sensor.thehague_parking_${slug}_reservations`
+      : undefined;
 
     this._configChanged({
       ...this._config,
       config_entry_id: entryId,
-      meldnummer,
-      entity: slug ? `sensor.thehague_parking_${slug}_reservations` : undefined,
+      entity,
     });
   }
 
@@ -125,11 +132,6 @@ export class TheHagueParkingActiveReservationCardEditor extends LitElement {
     });
   }
 
-  private _entityChanged(ev: CustomEvent) {
-    if (!this._config) return;
-    this._configChanged({ ...this._config, entity: ev.detail.value });
-  }
-
   render() {
     if (!this.hass) return nothing;
 
@@ -154,17 +156,6 @@ export class TheHagueParkingActiveReservationCardEditor extends LitElement {
           label=${localize(this.hass, "active_reservation_card.title")}
           @input=${this._titleChanged}
         ></ha-textfield>
-
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${this._config?.entity ?? ""}
-          .includeDomains=${["sensor"]}
-          .filter=${(eid: string) =>
-            eid.startsWith("sensor.thehague_parking_") &&
-            eid.endsWith("_reservations")}
-          label=${localize(this.hass, "active_reservation_card.reservations_sensor")}
-          @value-changed=${this._entityChanged}
-        ></ha-entity-picker>
       </div>
     `;
   }

@@ -17,6 +17,8 @@ from homeassistant.util import dt as dt_util, slugify
 from .const import DOMAIN
 from .coordinator import TheHagueParkingCoordinator, TheHagueParkingData
 
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TheHagueParkingSensorEntityDescription(SensorEntityDescription):
@@ -55,12 +57,41 @@ def _format_time(value: str | None) -> str | None:
     return dt_util.as_local(parsed).strftime("%H:%M")
 
 
-def _clean_favorite(favorite: dict[str, Any]) -> dict[str, str | None]:
+def _clean_favorite(favorite: dict[str, Any]) -> dict[str, str | int | None]:
+    favorite_id = favorite.get("id")
+    favorite_id_clean: int | None = None
+    if isinstance(favorite_id, int):
+        favorite_id_clean = favorite_id
+    elif isinstance(favorite_id, str) and favorite_id.isdigit():
+        favorite_id_clean = int(favorite_id)
+
     name = favorite.get("name")
     license_plate = favorite.get("license_plate")
     return {
+        "id": favorite_id_clean,
         "name": name if isinstance(name, str) else None,
         "license_plate": license_plate if isinstance(license_plate, str) else None,
+    }
+
+
+def _clean_reservation(reservation: dict[str, Any]) -> dict[str, str | int | None]:
+    reservation_id = reservation.get("id")
+    reservation_id_clean: int | None = None
+    if isinstance(reservation_id, int):
+        reservation_id_clean = reservation_id
+    elif isinstance(reservation_id, str) and reservation_id.isdigit():
+        reservation_id_clean = int(reservation_id)
+
+    name = reservation.get("name")
+    license_plate = reservation.get("license_plate")
+    start_time = reservation.get("start_time")
+    end_time = reservation.get("end_time")
+    return {
+        "id": reservation_id_clean,
+        "name": name if isinstance(name, str) else None,
+        "license_plate": license_plate if isinstance(license_plate, str) else None,
+        "start_time": start_time if isinstance(start_time, str) else None,
+        "end_time": end_time if isinstance(end_time, str) else None,
     }
 
 
@@ -98,7 +129,7 @@ async def async_setup_entry(
     for description in SENSORS:
         unique_id = f"{unique_base}-{description.key}"
         desired_entity_id = (
-            f"sensor.thehague_parking_{slug}_favorieten"
+            f"sensor.thehague_parking_{slug}_favorites"
             if description.key == "favorites"
             else f"sensor.thehague_parking_{slug}_{description.key}"
         )
@@ -143,7 +174,7 @@ class TheHagueParkingSensor(CoordinatorEntity[TheHagueParkingCoordinator], Senso
         self._attr_unique_id = f"{unique_base}-{description.key}"
         slug = slugify(unique_base)
         if description.key == "favorites":
-            self.entity_id = f"sensor.thehague_parking_{slug}_favorieten"
+            self.entity_id = f"sensor.thehague_parking_{slug}_favorites"
         else:
             self.entity_id = f"sensor.thehague_parking_{slug}_{description.key}"
 
@@ -156,7 +187,8 @@ class TheHagueParkingSensor(CoordinatorEntity[TheHagueParkingCoordinator], Senso
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra state attributes."""
         if self.entity_description.key == "account":
-            zone = self.coordinator.data.account.get("zone") or {}
+            raw_zone = self.coordinator.data.account.get("zone")
+            zone = raw_zone if isinstance(raw_zone, dict) else {}
             return {
                 "debit_minutes": _format_minutes(
                     self.coordinator.data.account.get("debit_minutes")
@@ -168,7 +200,11 @@ class TheHagueParkingSensor(CoordinatorEntity[TheHagueParkingCoordinator], Senso
 
         if self.entity_description.key == "reservations":
             return {
-                "reservations": self.coordinator.data.reservations,
+                "reservations": [
+                    _clean_reservation(reservation)
+                    for reservation in self.coordinator.data.reservations
+                    if isinstance(reservation, dict)
+                ],
             }
 
         if self.entity_description.key == "favorites":
